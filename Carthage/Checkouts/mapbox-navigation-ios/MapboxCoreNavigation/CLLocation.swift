@@ -1,5 +1,6 @@
 import CoreLocation
-
+import MapboxDirections
+import Turf
 
 extension CLLocation {
     
@@ -9,8 +10,7 @@ extension CLLocation {
         #else
             return
                 0...100 ~= horizontalAccuracy &&
-                0...30 ~= verticalAccuracy &&
-                speed >= 0
+                0...30 ~= verticalAccuracy
         #endif
     }
     
@@ -33,7 +33,7 @@ extension CLLocation {
      
      - parameter dictionary: A dictionary representation of the location.
      */
-    public convenience init(dictionary: [String:Any]) {
+    public convenience init(dictionary: [String: Any]) {
         let latitude = dictionary["latitude"] as? CLLocationDegrees ?? dictionary["lat"] as? CLLocationDegrees ?? 0
         let longitude = dictionary["longitude"] as? CLLocationDegrees ?? dictionary["lon"] as? CLLocationDegrees ?? dictionary["lng"] as? CLLocationDegrees ?? 0
         let altitude = dictionary["altitude"] as! CLLocationDistance
@@ -62,5 +62,15 @@ extension CLLocation {
                   course: course,
                   speed: speed,
                   timestamp: date!)
+    }
+    
+    /**
+     Returns a Boolean value indicating whether the receiver is within a given distance of a route step, inclusive.
+     */
+    func isWithin(_ maximumDistance: CLLocationDistance, of routeStep: RouteStep) -> Bool {
+        guard let closestCoordinate = Polyline(routeStep.coordinates!).closestCoordinate(to: coordinate) else {
+            return false
+        }
+        return closestCoordinate.distance < maximumDistance
     }
 }

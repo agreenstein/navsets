@@ -51,36 +51,20 @@
 }
 
 - (void)resumeNotifications {
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(alertLevelDidChange:) name:MBRouteControllerAlertLevelDidChange object:_navigation];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(progressDidChange:) name:MBRouteControllerNotificationProgressDidChange object:_navigation];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(willReroute:) name:MBRouteControllerWillReroute object:_navigation];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didPassSpokenInstructionPoint:) name:MBRouteControllerDidPassSpokenInstructionPointNotification object:_navigation];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(progressDidChange:) name:MBRouteControllerProgressDidChangeNotification object:_navigation];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(willReroute:) name:MBRouteControllerWillRerouteNotification object:_navigation];
 }
 
 - (void)suspendNotifications {
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:MBRouteControllerAlertLevelDidChange object:_navigation];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:MBRouteControllerNotificationProgressDidChange object:_navigation];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:MBRouteControllerWillReroute object:_navigation];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:MBRouteControllerDidPassSpokenInstructionPointNotification object:_navigation];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:MBRouteControllerProgressDidChangeNotification object:_navigation];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:MBRouteControllerWillRerouteNotification object:_navigation];
 }
 
-- (void)alertLevelDidChange:(NSNotification *)notification {
-    MBRouteProgress *routeProgress = (MBRouteProgress *)notification.userInfo[MBRouteControllerProgressDidChangeNotificationProgressKey];
-    MBRouteStep *upcomingStep = routeProgress.currentLegProgress.upComingStep;
-    
-    NSString *text = nil;
-    if (upcomingStep) {
-        MBAlertLevel alertLevel = routeProgress.currentLegProgress.alertUserLevel;
-        if (alertLevel == MBAlertLevelHigh) {
-            text = upcomingStep.instructions;
-        } else {
-            text = [NSString stringWithFormat:@"In %@ %@",
-                    [self.lengthFormatter stringFromMeters:routeProgress.currentLegProgress.currentStepProgress.distanceRemaining],
-                    upcomingStep.instructions];
-        }
-    } else {
-        text = [NSString stringWithFormat:@"In %@ %@",
-                [self.lengthFormatter stringFromMeters:routeProgress.currentLegProgress.currentStepProgress.distanceRemaining],
-                routeProgress.currentLegProgress.currentStep.instructions];
-    }
+- (void)didPassSpokenInstructionPoint:(NSNotification *)notification {
+    MBRouteProgress *routeProgress = (MBRouteProgress *)notification.userInfo[MBRouteControllerRouteProgressKey];
+    NSString *text = routeProgress.currentLegProgress.currentStepProgress.currentSpokenInstruction.text;
     
     [self.speechSynth speakUtterance:[AVSpeechUtterance speechUtteranceWithString:text]];
 }
@@ -89,7 +73,7 @@
     // If you are using MapboxCoreNavigation,
     // this would be a good time to update UI elements.
     // You can grab the current routeProgress like:
-    // let routeProgress = notification.userInfo![RouteControllerAlertLevelDidChangeNotificationRouteProgressKey] as! RouteProgress
+    // let routeProgress = notification.userInfo![RouteControllerRouteProgressKey] as! RouteProgress
 }
 
 - (void)willReroute:(NSNotification *)notification {
@@ -100,7 +84,7 @@
     NSArray<MBWaypoint *> *waypoints = @[[[MBWaypoint alloc] initWithCoordinate:self.mapView.userLocation.coordinate coordinateAccuracy:-1 name:nil],
                                          [[MBWaypoint alloc] initWithCoordinate:self.destination coordinateAccuracy:-1 name:nil]];
     
-    MBRouteOptions *options = [[MBRouteOptions alloc] initWithWaypoints:waypoints profileIdentifier:MBDirectionsProfileIdentifierAutomobileAvoidingTraffic];
+    MBNavigationRouteOptions *options = [[MBNavigationRouteOptions alloc] initWithWaypoints:waypoints profileIdentifier:MBDirectionsProfileIdentifierAutomobileAvoidingTraffic];
     options.includesSteps = YES;
     options.routeShapeResolution = MBRouteShapeResolutionFull;
     
@@ -139,10 +123,6 @@
         
         controller.directions = [MBDirections sharedDirections];
         controller.route = self.route;
-        
-        MGLPointAnnotation *destination = [[MGLPointAnnotation alloc] init];
-        destination.coordinate = self.destination;
-        controller.destination = destination;
         
         controller.routeController.locationManager = [[MBSimulatedLocationManager alloc] initWithRoute:self.route];
     }

@@ -4,6 +4,8 @@ set -e
 set -o pipefail
 set -u
 
+./scripts/update-guides.sh
+
 if [ -z `which jazzy` ]; then
     echo "Installing jazzy…"
     gem install jazzy
@@ -18,7 +20,8 @@ OUTPUT=${OUTPUT:-documentation}
 
 BRANCH=$( git describe --tags --match=v*.*.* --abbrev=0 )
 SHORT_VERSION=$( echo ${BRANCH} | sed 's/^v//' )
-RELEASE_VERSION=$( echo ${SHORT_VERSION} | sed -e 's/^v//' -e 's/-.*//' )
+RELEASE_VERSION=$( echo ${SHORT_VERSION} | sed -e 's/-.*//' )
+MINOR_VERSION=$( echo ${SHORT_VERSION} | grep -Eo '^\d+\.\d+' )
 
 DEFAULT_THEME="docs/theme"
 THEME=${JAZZY_THEME:-$DEFAULT_THEME}
@@ -26,13 +29,22 @@ THEME=${JAZZY_THEME:-$DEFAULT_THEME}
 BASE_URL="https://www.mapbox.com/mapbox-navigation-ios"
 
 # Link to directions documentation
-DIRECTIONS_VERSION="0.9.1"
-DIRECTIONS_SYMBOLS="Directions|Route|RouteStep|RouteLeg|RouteOptions|Waypoint"
+DIRECTIONS_VERSION="0.17.0"
+DIRECTIONS_SYMBOLS="Directions|Intersection|Lane|Route|RouteLeg|RouteOptions|RouteStep|SpokenInstruction|VisualInstruction|VisualInstructionComponent|Waypoint"
 
 rm -rf ${OUTPUT}
 mkdir -p ${OUTPUT}
 
 cp -r docs/img "${OUTPUT}"
+
+rm -rf /tmp/mbnavigation
+mkdir -p /tmp/mbnavigation/
+README=/tmp/mbnavigation/README.md
+cp docs/cover.md "${README}"
+perl -pi -e "s/\\$\\{MINOR_VERSION\\}/${MINOR_VERSION}/" "${README}"
+# http://stackoverflow.com/a/4858011/4585461
+echo "## Changes in version ${RELEASE_VERSION}" >> "${README}"
+sed -n -e '/^## /{' -e ':a' -e 'n' -e '/^## /q' -e 'p' -e 'ba' -e '}' CHANGELOG.md >> "${README}"
 
 jazzy \
     --podspec MapboxNavigation-Documentation.podspec \
@@ -40,7 +52,8 @@ jazzy \
     --sdk iphonesimulator \
     --module-version ${SHORT_VERSION} \
     --github-file-prefix "https://github.com/mapbox/mapbox-navigation-ios/tree/${BRANCH}" \
-    --documentation=docs/guides/*.md \
+    --readme ${README} \
+    --documentation="docs/{guides,examples}/*.md" \
     --root-url "${BASE_URL}/navigation/${RELEASE_VERSION}/" \
     --theme ${THEME} \
     --output ${OUTPUT}
@@ -51,3 +64,6 @@ REPLACE_REGEXP+="s/<span class=\"kt\">(${DIRECTIONS_SYMBOLS})<\/span>/<span clas
 
 find ${OUTPUT} -name *.html -exec \
     perl -pi -e "$REPLACE_REGEXP" {} \;
+
+
+echo $SHORT_VERSION > $OUTPUT/latest_version

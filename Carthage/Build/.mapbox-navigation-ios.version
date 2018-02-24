@@ -1,13 +1,13 @@
 {
-  "commitish" : "v0.8.3",
+  "commitish" : "v0.14.0",
   "iOS" : [
     {
       "name" : "MapboxCoreNavigation",
-      "hash" : "54277cd00d16b4b70c10ec1542054a2547e46d96fd2fd7cb670a65df1b1ae338"
+      "hash" : "3c5c3902449f6812d4790d12e284bdcb2dbfa766ab6685f513d4acc10546a8ba"
     },
     {
       "name" : "MapboxNavigation",
-      "hash" : "603ec10d9569f2ea6408f1f5f99740ce3b422eff027edc8f4e0c71c086ee0962"
+      "hash" : "1129ddb7d7acbf1b358172dd59ece0cbe2a02ec31f3f67f0fda64c046015d75c"
     }
   ]
 }

@@ -4,7 +4,7 @@ let path = Bundle.mapboxNavigation.path(forResource: "Abbreviations", ofType: "p
 let allAbbrevations = NSDictionary(contentsOfFile: path) as? [String: [String: String]]
 
 /// Options that specify what kinds of words in a string should be abbreviated.
-struct StringAbbreviationOptions : OptionSet {
+struct StringAbbreviationOptions: OptionSet {
     let rawValue: Int
     
     /// Abbreviates ordinary words that have common abbreviations.
@@ -65,6 +65,6 @@ extension String {
     }
     
     func fittedSize(with size: CGSize, font: UIFont) -> CGSize {
-        return self.boundingRect(with: size, options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: [NSFontAttributeName: font], context: nil).size
+        return self.boundingRect(with: size, options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: [.font: font], context: nil).size
     }
 }

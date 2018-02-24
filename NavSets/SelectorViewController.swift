@@ -22,13 +22,14 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     @IBOutlet weak var backButton: UIButton!
     @IBOutlet weak var originField: UITextField!
     @IBOutlet weak var startButton: UIButton!
-    @IBOutlet weak var paymentButton: UIButton!
     @IBOutlet weak var routeDistanceAndTime: UILabel!
     @IBOutlet weak var carButton: UIButton!
     @IBOutlet weak var switchButton: UIButton!
     @IBOutlet weak var walkButton: UIButton!
     @IBOutlet weak var bikeButton: UIButton!
     @IBOutlet weak var uberButton: UIButton!
+    @IBOutlet weak var settingsButton: UIButton!
+    @IBOutlet weak var settingsTable: UITableView!
     @IBOutlet weak var originGeocodeResultsTable: UITableView!
     @IBOutlet weak var destinationGeocodeResultsTable: UITableView!
     var mapView: MGLMapView!
@@ -95,6 +96,10 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         originGeocodeResultsTable.delegate = self
         originGeocodeResultsTable.dataSource = self
         originGeocodeResultsTable.isHidden = true
+        // set up the settings table
+        settingsTable.delegate = self
+        settingsTable.dataSource = self
+        settingsTable.isHidden = true
         
         // Add the geocoder
         geocoder = Geocoder.shared
@@ -135,7 +140,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         
         // add rounding to corners of buttons
         self.startButton.layer.cornerRadius = 7
-        self.paymentButton.layer.cornerRadius = 7
+//        self.paymentButton.layer.cornerRadius = 7
         self.backButton.layer.cornerRadius = 7
         self.carButton.layer.cornerRadius = 7
         self.bikeButton.layer.cornerRadius = 7
@@ -254,28 +259,28 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
                 mapStyleURL = URL(string: "mapbox://styles/mapbox/light-v9")!
             }
             
-            override func apply() {
-                super.apply()
-                ManeuverView.appearance().backgroundColor = #colorLiteral(red: 0.1897518039, green: 0.3010634184, blue: 0.7994888425, alpha: 1)
-                RouteTableViewHeaderView.appearance().backgroundColor = #colorLiteral(red: 0.1897518039, green: 0.3010634184, blue:0.7994888425, alpha: 1)
-                Button.appearance().textColor = .white
-                DistanceLabel.appearance().textColor = .white
-                DestinationLabel.appearance().textColor = .white
-                ArrivalTimeLabel.appearance().textColor = .white
-                TimeRemainingLabel.appearance().textColor = .white
-                DistanceRemainingLabel.appearance().textColor = .white
-                TurnArrowView.appearance().primaryColor = .white
-                TurnArrowView.appearance().secondaryColor = .white
-                LanesView.appearance().backgroundColor = .white
-                LaneArrowView.appearance().primaryColor = .white
-                CancelButton.appearance().tintColor = .white
-            }
+//            override func apply() {
+//                super.apply()
+//                ManeuverView.appearance().backgroundColor = #colorLiteral(red: 0.1897518039, green: 0.3010634184, blue: 0.7994888425, alpha: 1)
+//                RouteTableViewHeaderView.appearance().backgroundColor = #colorLiteral(red: 0.1897518039, green: 0.3010634184, blue:0.7994888425, alpha: 1)
+//                Button.appearance().textColor = .white
+//                DistanceLabel.appearance().textColor = .white
+//                DestinationLabel.appearance().textColor = .white
+//                ArrivalTimeLabel.appearance().textColor = .white
+//                TimeRemainingLabel.appearance().textColor = .white
+//                DistanceRemainingLabel.appearance().textColor = .white
+//                TurnArrowView.appearance().primaryColor = .white
+//                TurnArrowView.appearance().secondaryColor = .white
+//                LanesView.appearance().backgroundColor = .white
+//                LaneArrowView.appearance().primaryColor = .white
+//                CancelButton.appearance().tintColor = .white
+//            }
         }
         
         let viewController = NavigationViewController(for: route, locationManager: SimulatedLocationManager(route:route))
+        viewController.delegate = self
         self.present(viewController, animated: true, completion: nil)
     }
-    
     
     //MARK: UITextFieldDelegate
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
@@ -340,59 +345,85 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         else if (tableView == destinationGeocodeResultsTable) {
             return destinationForwardGeocodeResults?.count ?? 10
         }
+        else if (tableView == settingsTable){
+            // Three settings cells: payment, vehicle, close
+            return 3
+        }
         return 10
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "forwardGeocodeResult", for: indexPath)
-        if (tableView == originGeocodeResultsTable) {
-            cell.textLabel?.text = originForwardGeocodeResults?[indexPath.item].qualifiedName
+        if (tableView == originGeocodeResultsTable || tableView == destinationGeocodeResultsTable){
+            let cell = tableView.dequeueReusableCell(withIdentifier: "forwardGeocodeResult", for: indexPath)
+            if (tableView == originGeocodeResultsTable) {
+                cell.textLabel?.text = originForwardGeocodeResults?[indexPath.item].qualifiedName
+            }
+            else if (tableView == destinationGeocodeResultsTable) {
+                cell.textLabel?.text = destinationForwardGeocodeResults?[indexPath.item].qualifiedName
+            }
+            return cell
         }
-        else if (tableView == destinationGeocodeResultsTable) {
-            cell.textLabel?.text = destinationForwardGeocodeResults?[indexPath.item].qualifiedName
+        else{
+            let cell = tableView.dequeueReusableCell(withIdentifier: "settingsCell", for: indexPath)
+            let settingsOptions = ["Update Payment", "Vehicle Settings", "Cancel"]
+            cell.textLabel?.text = settingsOptions[indexPath.item]
+            return cell
         }
-        return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
     {
-        var shouldCalculateRoute = true
-        // we are updating the origin information
-        if (tableView == originGeocodeResultsTable) {
-            let placemark = originForwardGeocodeResults?[indexPath.item]
-            // make sure an actual location cell was selected
-            if (placemark != nil){
-                // Update the route model and set the text in the search field
-                self.routeModel!.startLocation = (placemark?.location.coordinate)!
-                self.originField.text = placemark?.qualifiedName
-                self.originField.endEditing(true)
+        if (tableView == settingsTable){
+            // Update payment
+            if (indexPath.item == 0){
+                self.paymentContext.presentPaymentMethodsViewController()
             }
-            else {
-                shouldCalculateRoute = false
+            // Update vehicle
+            else if (indexPath.item == 1){
+                performSegue(withIdentifier: "Settings", sender: nil)
             }
+            // Always hide after selection
+            settingsTable.isHidden = true
         }
-        // we are updating the destination information
-        else if (tableView == destinationGeocodeResultsTable) {
-            let placemark = destinationForwardGeocodeResults?[indexPath.item]
-            // make sure an actual location cell was selected
-            if (placemark != nil){
-                // Update the route model and set the text in the search field
-                self.routeModel!.destinationLocation = (placemark?.location.coordinate)!
-                self.destinationField.text = placemark?.qualifiedName
-                self.destinationField.endEditing(true)
+        else{
+            var shouldCalculateRoute = true
+            // we are updating the origin information
+            if (tableView == originGeocodeResultsTable) {
+                let placemark = originForwardGeocodeResults?[indexPath.item]
+                // make sure an actual location cell was selected
+                if (placemark != nil){
+                    // Update the route model and set the text in the search field
+                    self.routeModel!.startLocation = (placemark?.location.coordinate)!
+                    self.originField.text = placemark?.qualifiedName
+                    self.originField.endEditing(true)
+                }
+                else {
+                    shouldCalculateRoute = false
+                }
             }
-            else {
-                shouldCalculateRoute = false
+            // we are updating the destination information
+            else if (tableView == destinationGeocodeResultsTable) {
+                let placemark = destinationForwardGeocodeResults?[indexPath.item]
+                // make sure an actual location cell was selected
+                if (placemark != nil){
+                    // Update the route model and set the text in the search field
+                    self.routeModel!.destinationLocation = (placemark?.location.coordinate)!
+                    self.destinationField.text = placemark?.qualifiedName
+                    self.destinationField.endEditing(true)
+                }
+                else {
+                    shouldCalculateRoute = false
+                }
             }
-        }
-        if (shouldCalculateRoute) {
-            // hide the table
-            tableView.isHidden = true
-            // recalculate and redraw the route
-            calculateRoute(from: (routeModel?.startLocation)!, to: (routeModel?.destinationLocation)!, transitMode: routeModel?.transitMode) { [unowned self] (route, error) in
-                if error != nil {
-                    // print an error message
-                    print ("Error calculating route")
+            if (shouldCalculateRoute) {
+                // hide the table
+                tableView.isHidden = true
+                // recalculate and redraw the route
+                calculateRoute(from: (routeModel?.startLocation)!, to: (routeModel?.destinationLocation)!, transitMode: routeModel?.transitMode) { [unowned self] (route, error) in
+                    if error != nil {
+                        // print an error message
+                        print ("Error calculating route")
+                    }
                 }
             }
         }
@@ -430,6 +461,11 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
             dismiss(animated: true, completion: nil)
         }
         
+    }
+    @IBAction func showSettings(_ sender: UIButton) {
+        if sender === settingsButton{
+            settingsTable.isHidden = false
+        }
     }
     
     @IBAction func startNav(_ sender: UIButton) {
@@ -518,11 +554,11 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         }
     }
     
-    @IBAction func choosePaymentButtonTapped(_ sender: UIButton) {
-        if sender == paymentButton{
-            self.paymentContext.presentPaymentMethodsViewController()
-        }
-    }
+//    @IBAction func choosePaymentButtonTapped(_ sender: UIButton) {
+//        if sender == paymentButton{
+//            self.paymentContext.presentPaymentMethodsViewController()
+//        }
+//    }
     
     //MARK: Actions
     @IBAction func unwindToSelector(sender: UIStoryboardSegue){
@@ -606,5 +642,13 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
 class CustomPolyline: MGLPolylineFeature {
     var color: UIColor?
     var width: CGFloat?
+}
+
+//MARK: NavigationViewControllerDelegate
+extension SelectorViewController: NavigationViewControllerDelegate {
+    func navigationViewControllerDidCancelNavigation(_ navigationViewController: NavigationViewController) {
+        print ("navigation canceled")
+        navigationViewController.dismiss(animated: true, completion: nil)
+    }
 }
 
