@@ -22,6 +22,7 @@
 		4377BD791FCD165600E4FFA5 /* SelectorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4377BD781FCD165600E4FFA5 /* SelectorViewController.swift */; };
 		43C428991FD7541F009195EA /* RouteModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43C428981FD7541F009195EA /* RouteModel.swift */; };
 		43F8A1201FD45D8300C4D460 /* VehicleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F8A11F1FD45D8300C4D460 /* VehicleData.swift */; };
+		9E30B3142042355E00869B1A /* StartupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E30B3132042355E00869B1A /* StartupViewController.swift */; };
 		9E91B2001FD7594400CCFCE3 /* vehicle_data.csv in Resources */ = {isa = PBXBuildFile; fileRef = 9E91B1FF1FD7594300CCFCE3 /* vehicle_data.csv */; };
 		9E91B2021FD75BA800CCFCE3 /* MainAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E91B2011FD75BA800CCFCE3 /* MainAPIClient.swift */; };
 		B5A4334D00F870CD07D840F3 /* Pods_NavSetsUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D3BBCF30C46C746DFEF3091 /* Pods_NavSetsUITests.framework */; };
@@ -86,6 +87,7 @@
 		43F8A11F1FD45D8300C4D460 /* VehicleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleData.swift; sourceTree = "<group>"; };
 		95C7312F1C2B0E1C39CE30EF /* Pods-NavSetsUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NavSetsUITests.release.xcconfig"; path = "Pods/Target Support Files/Pods-NavSetsUITests/Pods-NavSetsUITests.release.xcconfig"; sourceTree = "<group>"; };
 		9AEF6975A77E9CE9D604FD3F /* Pods_NavSetsTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_NavSetsTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E30B3132042355E00869B1A /* StartupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupViewController.swift; sourceTree = "<group>"; };
 		9E8ADB881FD70E2800D3FD61 /* NavSets-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NavSets-Bridging-Header.h"; sourceTree = "<group>"; };
 		9E91B1FF1FD7594300CCFCE3 /* vehicle_data.csv */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = vehicle_data.csv; sourceTree = "<group>"; };
 		9E91B2011FD75BA800CCFCE3 /* MainAPIClient.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MainAPIClient.swift; sourceTree = "<group>"; };
@@ -155,6 +157,7 @@
 				4377BD781FCD165600E4FFA5 /* SelectorViewController.swift */,
 				9E91B2011FD75BA800CCFCE3 /* MainAPIClient.swift */,
 				4377BD491FCD05C800E4FFA5 /* Main.storyboard */,
+				9E30B3132042355E00869B1A /* StartupViewController.swift */,
 				4377BD4C1FCD05C800E4FFA5 /* Assets.xcassets */,
 				4377BD4E1FCD05C800E4FFA5 /* LaunchScreen.storyboard */,
 				4377BD511FCD05C800E4FFA5 /* Info.plist */,
@@ -567,6 +570,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9E30B3142042355E00869B1A /* StartupViewController.swift in Sources */,
 				4377BD481FCD05C800E4FFA5 /* BaseViewController.swift in Sources */,
 				4377BD791FCD165600E4FFA5 /* SelectorViewController.swift in Sources */,
 				4369C1B71FD09A270029CD28 /* UserModel.swift in Sources */,

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="13771" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="BYZ-38-t0r">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="13771" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="CNw-en-aTM">
     <device id="retina4_7" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
@@ -11,6 +11,54 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
+        <!--Startup View Controller-->
+        <scene sceneID="yHX-0e-ZX5">
+            <objects>
+                <viewController id="CNw-en-aTM" customClass="StartupViewController" customModule="NavSets" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="5HO-qk-dTP">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="PpK-gn-Une">
+                                <rect key="frame" x="112" y="86" width="150" height="30"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <state key="normal" title="Set Vehicle"/>
+                                <connections>
+                                    <action selector="setupVehicle:" destination="CNw-en-aTM" eventType="touchUpInside" id="HqY-YY-HYd"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Ldv-0e-jOs">
+                                <rect key="frame" x="112" y="542" width="150" height="30"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <state key="normal" title="Let's Get Started"/>
+                                <connections>
+                                    <action selector="launchBaseView:" destination="CNw-en-aTM" eventType="touchUpInside" id="b3y-Sn-SJn"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="8qo-v6-vMc">
+                                <rect key="frame" x="112" y="149" width="150" height="30"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <state key="normal" title="Set Payment"/>
+                                <connections>
+                                    <action selector="setupPayment:" destination="CNw-en-aTM" eventType="touchUpInside" id="W7N-I3-KeA"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <viewLayoutGuide key="safeArea" id="Pzd-vd-aBw"/>
+                    </view>
+                    <connections>
+                        <outlet property="getStarted" destination="Ldv-0e-jOs" id="dbo-3T-LWn"/>
+                        <outlet property="setPayment" destination="8qo-v6-vMc" id="1jx-Qx-5H4"/>
+                        <outlet property="setVehicle" destination="PpK-gn-Une" id="9M1-Tn-isR"/>
+                        <segue destination="BYZ-38-t0r" kind="presentation" identifier="baseView" id="eaH-r5-UDk"/>
+                        <segue destination="6fb-Bf-SRU" kind="presentation" identifier="vehicleSettings" id="A2e-Pr-sdB"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="y2h-EJ-gfI" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-690.39999999999998" y="122.78860569715144"/>
+        </scene>
         <!--Base View Controller-->
         <scene sceneID="tne-QT-ifu">
             <objects>
@@ -471,4 +519,7 @@
         <image name="walk_selected" width="25" height="25"/>
         <image name="walk_unselected" width="25" height="25"/>
     </resources>
+    <inferredMetricsTieBreakers>
+        <segue reference="A2e-Pr-sdB"/>
+    </inferredMetricsTieBreakers>
 </document>

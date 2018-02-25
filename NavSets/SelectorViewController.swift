@@ -450,7 +450,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
                 destination.userModel = self.userModel
             }
         default:
-            var x = 0
+            print ("Unrecognized segue identifier")
         }
     }
     

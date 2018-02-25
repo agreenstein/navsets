@@ -22,31 +22,6 @@ class MainAPIClient: NSObject, STPEphemeralKeyProvider {
         }
     }
     
-//    func createCustomer(_ result: STPPaymentResult, user: UserModel, completion: @escaping STPErrorBlock){
-//        var json_response: String? = nil
-//        let url = self.baseURL.appendingPathComponent("create_customer")
-//        let params: [String: Any] = [
-//            "source": result.source.stripeID,
-////            "stripeToken": token
-//        ]
-//        Alamofire.request(url, method: .post, parameters: params)
-//            .validate(statusCode: 200..<300)
-//            .responseJSON { responseJSON in
-//                switch responseJSON.result {
-//                case .success(let json):
-//                    print("Success with JSON: \(json)")
-////                    print(json as? [String: AnyObject])
-//                    json_response = json as? String
-//                    completion(nil)
-//                case .failure(let error):
-//                    print("Request failed with error: \(error)")
-//                    completion(error)
-//                }
-//        }
-//        print (json_response as Any)
-//        user.stripeID = json_response
-//    }
-    
     func completeCharge(_ result: STPPaymentResult,
                         amount: Int, currency: String, customer: String,
                         completion: @escaping STPErrorBlock) {
