@@ -39,11 +39,6 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, STPPaymentCon
             self.userModel = user
         }
         saveUser()
-        let firstLaunch = UserDefaults.standard.bool(forKey: "firstLaunch")
-        if !firstLaunch{
-            // just transition to baseView
-            performSegue(withIdentifier: "baseView", sender: nil)
-        }
     }
     
     override func didReceiveMemoryWarning() {
@@ -61,6 +56,13 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, STPPaymentCon
     }
     
     @IBAction func launchBaseView(_ sender: Any) {
+        // Once setup is done, update the root view controller so we don't unwind back to the setup view
+        let appDelegate = UIApplication.shared.delegate as! AppDelegate
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        let baseViewController = storyboard.instantiateViewController(withIdentifier: "BaseViewController")
+        appDelegate.window = UIWindow(frame: UIScreen.main.bounds)
+        appDelegate.window!.rootViewController = baseViewController
+        appDelegate.window?.makeKeyAndVisible()
         performSegue(withIdentifier: "baseView", sender: nil)
     }
     

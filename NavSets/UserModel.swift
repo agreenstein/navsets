@@ -31,7 +31,6 @@ class UserModel: NSObject, NSCoding{
     var carModel: String?
     var carYear: String?
     var stripeID: String?
-//    var routeList: [RouteModel]?
     var cumulativeCost: Int
     
     var CO2GramsPerMile: Float?
@@ -44,7 +43,6 @@ class UserModel: NSObject, NSCoding{
         carYear = nil
         CO2GramsPerMile = nil
         stripeID = nil
-//        routeList = []
         cumulativeCost = 0
     }
     
@@ -52,7 +50,6 @@ class UserModel: NSObject, NSCoding{
         self.carMake = carMake
         self.carModel = carModel
         self.carYear = carYear
-//        self.routeList = routeList
         self.cumulativeCost = cumulativeCost
     }
     
@@ -62,7 +59,6 @@ class UserModel: NSObject, NSCoding{
         self.carYear = carYear
         self.CO2GramsPerMile = gramsPerMile
         self.stripeID = stripeID
-//        self.routeList = routeList
         self.cumulativeCost = cumulativeCost ?? 0
     }
     
@@ -82,14 +78,6 @@ class UserModel: NSObject, NSCoding{
         
     }
     
-//    func getRouteCostSum() -> Int{
-//        var cost = 0
-//        for route in self.routeList!{
-//            cost += route.routeCost
-//        }
-//        return cost
-//    }
-    
     
     //MARK: NSCoding
     func encode(with aCoder: NSCoder) {
@@ -108,10 +96,9 @@ class UserModel: NSObject, NSCoding{
         let carYear = aDecoder.decodeObject(forKey: PropertyKey.carYear) as? String
         let emissions = aDecoder.decodeObject(forKey: PropertyKey.CO2GramsPerMile) as? Float
         let stripeID = aDecoder.decodeObject(forKey: PropertyKey.stripeID) as? String
-//        let routeList = aDecoder.decodeObject(forKey: PropertyKey.routeList) as? [RouteModel]
         let cumulativeCost = aDecoder.decodeObject(forKey: PropertyKey.cumulativeCost) as? Int
         
-        self.init(carMake: carMake, carModel: carModel, carYear: carYear, gramsPerMile: emissions, stripeID: stripeID, /*routeList: routeList*/ cumulativeCost: cumulativeCost)
+        self.init(carMake: carMake, carModel: carModel, carYear: carYear, gramsPerMile: emissions, stripeID: stripeID, cumulativeCost: cumulativeCost)
     }
     
 }

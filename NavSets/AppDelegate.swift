@@ -33,13 +33,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        self.window = UIWindow(frame: UIScreen.main.bounds)
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        var initialViewController = storyboard.instantiateViewController(withIdentifier: "BaseViewController")
+        // Determine the view we should start with
         let firstLaunch = UserDefaults.standard.bool(forKey: "firstLaunch")
         if firstLaunch  {
             print("First launch, setting UserDefault")
+            initialViewController = storyboard.instantiateViewController(withIdentifier: "StartupViewController")
             UserDefaults.standard.set(false, forKey: "firstLaunch")
         } else {
+            // Don't update the initial view controller
             print("Not first launch")
         }
+        // TEMPORARILY reset firstLaunch boolean so can view setup walkthrough screen
+        UserDefaults.standard.set(true, forKey: "firstLaunch")
+        self.window?.rootViewController = initialViewController
+        self.window?.makeKeyAndVisible()
         return true
     }
     

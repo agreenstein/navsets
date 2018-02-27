@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import CoreLocation
 import Mapbox
 import MapboxCoreNavigation
 import MapboxNavigation
@@ -15,7 +16,7 @@ import MapboxGeocoder
 import os.log
 
 
-class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDelegate, UITableViewDataSource, UITableViewDelegate {
+class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDelegate, UITableViewDataSource, UITableViewDelegate{
     //MARK: Properties
     @IBOutlet weak var locationSearchTextField: UITextField!
     @IBOutlet weak var resultsTable: UITableView!
@@ -23,6 +24,7 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
     
     var routeModel: RouteModel?
     var userModel: UserModel?
+    var canShowUserLocation: Bool!
     
     var geocoder: Geocoder!
     var geocodingDataTask: URLSessionDataTask?
@@ -53,9 +55,6 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
         view.addSubview(mapView)
         view.sendSubview(toBack: mapView) // send the map view to the back, behind the other added UI elements
         
-        // Allow the map view to show the user's location
-        mapView.showsUserLocation = true
-        
         // Set the map view's delegate
         mapView.delegate = self
         
@@ -67,6 +66,10 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
         
         // Preload global data to speed up future use
         let shared = VehicleData.sharedInstance
+        
+        // Allow the map view to show the user's location and check the location privileges
+        mapView.showsUserLocation = true
+        checkLocationPrivileges()
         
         // load and authenticate the user
         if let user = loadUser(){
@@ -84,6 +87,33 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
         saveUser()
     }
     
+    func checkLocationPrivileges(){
+        if CLLocationManager.locationServicesEnabled()  {
+            switch CLLocationManager.authorizationStatus() {
+            case .notDetermined, .restricted, .denied:
+                canShowUserLocation = false
+                print("No access")
+            case .authorizedAlways, .authorizedWhenInUse:
+                canShowUserLocation = true
+                print("Access")
+            }
+        } else {
+            print("Location services are not enabled")
+            canShowUserLocation = false
+        }
+        if (canShowUserLocation! == true && mapView.userLocation?.coordinate.latitude != -180){
+            mapView.setCenter((mapView.userLocation?.coordinate)!, zoomLevel: 11, animated: false)
+        }
+//        else{
+//            let title = "Location Services Not Enabled"
+//            let message = "Please allow NavSets to access your location. This can be done via settings"
+//            let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+////            let action = UIAlertAction(title: "OK", style: .default, handler: {(action: UIAlertAction!) in self.paymentContext.requestPayment()})
+////            alertController.addAction(action)
+//            self.present(alertController, animated: true, completion: nil)
+//        }
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -91,7 +121,9 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
 
     
     func mapViewDidFinishLoadingMap(_ mapView: MGLMapView) {
-        mapView.setCenter((mapView.userLocation?.coordinate)!, zoomLevel: 11, animated: false)
+        if (canShowUserLocation! == true){
+            mapView.setCenter((mapView.userLocation?.coordinate)!, zoomLevel: 11, animated: false)
+        }
     }
     
     @objc func didLongPress(_ sender: UILongPressGestureRecognizer){
@@ -126,6 +158,7 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
             }
         }
     }
+    
     
     //MARK: UITextFieldDelegate
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {

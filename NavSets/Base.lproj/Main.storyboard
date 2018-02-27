@@ -14,7 +14,7 @@
         <!--Startup View Controller-->
         <scene sceneID="yHX-0e-ZX5">
             <objects>
-                <viewController id="CNw-en-aTM" customClass="StartupViewController" customModule="NavSets" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="StartupViewController" id="CNw-en-aTM" customClass="StartupViewController" customModule="NavSets" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="5HO-qk-dTP">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -62,7 +62,7 @@
         <!--Base View Controller-->
         <scene sceneID="tne-QT-ifu">
             <objects>
-                <viewController id="BYZ-38-t0r" customClass="BaseViewController" customModule="NavSets" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="BaseViewController" id="BYZ-38-t0r" customClass="BaseViewController" customModule="NavSets" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -125,7 +125,7 @@
         <!--Settings-->
         <scene sceneID="KKp-XG-XeS">
             <objects>
-                <viewController id="gzc-Tt-JVg" customClass="SettingsViewController" customModule="NavSets" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="SettingsViewController" id="gzc-Tt-JVg" customClass="SettingsViewController" customModule="NavSets" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="7De-Rc-Sck">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -223,7 +223,7 @@
         <!--Selector View Controller-->
         <scene sceneID="9mO-yi-p5D">
             <objects>
-                <viewController id="dhc-mZ-B8u" customClass="SelectorViewController" customModule="NavSets" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="SelectorViewController" id="dhc-mZ-B8u" customClass="SelectorViewController" customModule="NavSets" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="SwZ-58-aAI">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -378,7 +378,7 @@
                                             <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Svl-rS-bbI">
                                                 <rect key="frame" x="0.0" y="0.0" width="335" height="33.5"/>
                                                 <subviews>
-                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Dist (XX mins) - Y lbs CO2" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="UzI-zA-SVe">
+                                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Dist (XX mins)" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="UzI-zA-SVe">
                                                         <rect key="frame" x="0.0" y="0.0" width="335" height="33.5"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="28"/>
                                                         <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -520,6 +520,6 @@
         <image name="walk_unselected" width="25" height="25"/>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="A2e-Pr-sdB"/>
+        <segue reference="5Ms-5Q-NFk"/>
     </inferredMetricsTieBreakers>
 </document>

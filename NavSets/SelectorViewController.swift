@@ -38,6 +38,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     var routeModel: RouteModel?
     var userModel: UserModel?
     var directionsRoute: Route?
+    var lastRouteDistance: Double?
     var originForwardGeocodeResults: Array<GeocodedPlacemark>?
     var destinationForwardGeocodeResults: Array<GeocodedPlacemark>?
     var launchUberButton = RideRequestButton()
@@ -161,6 +162,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         let destinationWaypoint = Waypoint(coordinate: destination, name: "Finish")
         let options = NavigationRouteOptions(waypoints: [originWaypoint, destinationWaypoint], profileIdentifier: profileID)
 //        options.includesAlternativeRoutes = true
+        options.includesAlternativeRoutes = false
         
         // clear the previous annotations
         if (mapView.annotations != nil) {
@@ -192,7 +194,8 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
             for route in reversed! {
                 self.directionsRoute = route
                 self.drawRoute(route: self.directionsRoute!, isMainRoute: route == routes?.first)
-                let dist = (self.directionsRoute?.distance)! / 1609.34
+                self.lastRouteDistance = self.directionsRoute?.distance
+                let dist = (self.lastRouteDistance)! / 1609.34
                 let time = Int((self.directionsRoute?.expectedTravelTime)! / 60)
                 self.routeDistanceAndTime.text = ("\(String(time)) mins" + " (\(String(format: "%.1f", dist)) miles)")
             }
@@ -203,13 +206,11 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
                 if (profileID == .automobile) || (profileID == .automobileAvoidingTraffic){
                     cost = self.userModel!.offsetCost(route: route)
                     let payment = Int(cost * 100)
-//                    if (payment < 50 ){
-//                        payment += 50
-//                    }
                     self.routeModel?.routeCost = payment
 //                    self.paymentContext.paymentAmount = payment
-                    buttonString = String(format: "Buy Route - $%.2f", cost)
-                    
+                    let poundsToCents = Float(0.00499)
+                    let carbonCost = Float(cost) / poundsToCents
+                    buttonString = String(format: "Buy Route - $%.2f", cost) + " (\(String(format: "%.1f", carbonCost)) lbs CO2)"
                 }
 
                 self.startButton.setTitle(buttonString, for: .normal)
@@ -382,8 +383,9 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
             else if (indexPath.item == 1){
                 performSegue(withIdentifier: "Settings", sender: nil)
             }
-            // Always hide after selection
+            // Always hide and deselect after selection
             settingsTable.isHidden = true
+            tableView.deselectRow(at: indexPath, animated: true)
         }
         else{
             var shouldCalculateRoute = true
@@ -554,11 +556,6 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         }
     }
     
-//    @IBAction func choosePaymentButtonTapped(_ sender: UIButton) {
-//        if sender == paymentButton{
-//            self.paymentContext.presentPaymentMethodsViewController()
-//        }
-//    }
     
     //MARK: Actions
     @IBAction func unwindToSelector(sender: UIStoryboardSegue){
@@ -604,6 +601,9 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
             title = "Error"
             message = error?.localizedDescription ?? ""
             print ("payment failure")
+            // remove the route that wasn't actually purchased
+            self.userModel?.cumulativeCost -= (self.routeModel?.routeCost)!
+            saveUser()
         case .success:
             title = "Success"
             message = "Offsets purchased"
@@ -612,6 +612,9 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
             self.userModel?.cumulativeCost = 0
             saveUser()
         case .userCancellation:
+            // remove the route that wasn't actually purchased
+            self.userModel?.cumulativeCost -= (self.routeModel?.routeCost)!
+            saveUser()
             return
         }
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
@@ -649,6 +652,26 @@ extension SelectorViewController: NavigationViewControllerDelegate {
     func navigationViewControllerDidCancelNavigation(_ navigationViewController: NavigationViewController) {
         print ("navigation canceled")
         navigationViewController.dismiss(animated: true, completion: nil)
+        // True up the actual distance traveled -> only do this if <90% of the total distance (and car is selected transit mode)
+        // Calculations done assuming that the route traveled is similar enough to the originally charged one
+        // so that we can just multiply the fraction traveled by the original cost to determine how much the user should have paid
+        if (selectedTransitButton == carButton){
+            let fractionTraveled = navigationViewController.routeController.routeProgress.fractionTraveled
+            if fractionTraveled < 0.9 {
+                let amountOverpaid = (1 - fractionTraveled) * Double((self.routeModel?.routeCost)!)
+                self.userModel?.cumulativeCost -= Int(amountOverpaid)
+                saveUser()
+                // routeCost, cumulativeCost, and amountOverpaid are in cents so need to divide by 100
+                let amountOverpaidString = String(format: "$%.2f", amountOverpaid / 100)
+                // present an alert to tell the user how much they were actually charged for
+                let title = "Thanks for Driving" // should change this
+                let message = "We detected that you didn't drive the full route you purchased.  Your account has been credited with the difference of " + amountOverpaidString
+                let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+                let action = UIAlertAction(title: "OK", style: .default, handler: nil)
+                alertController.addAction(action)
+                self.present(alertController, animated: true, completion: nil)
+            }
+        }
     }
 }
 
