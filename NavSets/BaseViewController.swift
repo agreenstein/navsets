@@ -20,6 +20,7 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
     //MARK: Properties
     @IBOutlet weak var locationSearchTextField: UITextField!
     @IBOutlet weak var resultsTable: UITableView!
+    @IBOutlet weak var currentLocationButton: UIButton!
     var mapView: MGLMapView!
     
     var routeModel: RouteModel?
@@ -79,12 +80,16 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
         if (self.userModel?.stripeID != nil){
             cust_id = (self.userModel?.stripeID)!
         }
-        // TODO: add logic to check for internet connection (also need to add similar checks for user location permissions)
+        // add logic to check for internet connection?
         let auth_result = MainAPIClient.sharedClient.authenticate(customer: cust_id)
         if self.userModel?.stripeID != auth_result{
             self.userModel?.stripeID = auth_result
         }
         saveUser()
+        
+        // add rounding to corners of buttons
+        self.resultsTable.layer.cornerRadius = 7
+        self.currentLocationButton.layer.cornerRadius = self.currentLocationButton.frame.size.width / 2;
     }
     
     func checkLocationPrivileges(){
@@ -104,14 +109,6 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
         if (canShowUserLocation! == true && mapView.userLocation?.coordinate.latitude != -180){
             mapView.setCenter((mapView.userLocation?.coordinate)!, zoomLevel: 11, animated: false)
         }
-//        else{
-//            let title = "Location Services Not Enabled"
-//            let message = "Please allow NavSets to access your location. This can be done via settings"
-//            let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
-////            let action = UIAlertAction(title: "OK", style: .default, handler: {(action: UIAlertAction!) in self.paymentContext.requestPayment()})
-////            alertController.addAction(action)
-//            self.present(alertController, animated: true, completion: nil)
-//        }
     }
     
     override func didReceiveMemoryWarning() {
@@ -159,6 +156,15 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
         }
     }
     
+    @IBAction func zoomToCurrentLocation(_ sender: UIButton) {
+        if sender === currentLocationButton {
+            if (canShowUserLocation! == true && mapView.userLocation?.coordinate.latitude != -180){
+                mapView.setCenter((mapView.userLocation?.coordinate)!, zoomLevel: 11, animated: true)
+                self.locationSearchTextField.text = "Current Location"
+                self.routeModel!.startLocation = mapView.userLocation?.coordinate
+            }
+        }
+    }
     
     //MARK: UITextFieldDelegate
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
@@ -243,9 +249,6 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
             guard let destination = destinationController as? SelectorViewController else {
                 fatalError("Invalid destination controller: \(segue.destination)")
             }
-//            guard let textField = sender as? UITextField else {
-//                fatalError("Invalid sender: \(String(describing: sender))")
-//            }
             // update route model object for passing to selector view
             // if the destination location hadn't been set yet, set it to the first geocoding result
             if (self.routeModel?.destinationLocation?.latitude == nil){

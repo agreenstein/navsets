@@ -8,37 +8,47 @@
 
 import UIKit
 import Mapbox
-import Stripe
 import os.log
 
-class StartupViewController: UIViewController, MGLMapViewDelegate, STPPaymentContextDelegate{
+class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationManagerDelegate{
     //MARK: Properties
+    var locManager: CLLocationManager!
     var userModel: UserModel?
-    var locationAccess: Bool!
     var mapView: MGLMapView!
-    let paymentContext: STPPaymentContext
-    let customerContext: STPCustomerContext
+    var canShowUserLocation: Bool!
+    var locationServicesDenied: Bool!
     @IBOutlet weak var setVehicle: UIButton!
-    @IBOutlet weak var setPayment: UIButton!
     @IBOutlet weak var getStarted: UIButton!
+    @IBOutlet weak var motorcycleButton: UIButton!
+    @IBOutlet weak var carButton: UIButton!
+    @IBOutlet weak var suvButton: UIButton!
+    @IBOutlet weak var truckButton: UIButton!
     
-    required init?(coder aDecoder: NSCoder) {
-        customerContext = STPCustomerContext(keyProvider: MainAPIClient.sharedClient)
-        paymentContext = STPPaymentContext(customerContext: customerContext)
-        
-        super.init(coder: aDecoder)
-        paymentContext.delegate = self
-        paymentContext.hostViewController = self
-    }
+    // emissions constants
+    let carCO2GramsPerMile = Float(375.3)
+    let motorcycleCO2GramsPerMile = Float(201.9)
+    let suvCO2GramsPerMile = Float(406.6)
+    let truckCO2GramsPerMile = Float(510.6)
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        locManager = CLLocationManager()
+        locManager.delegate = self
         
         // load the user
         if let user = loadUser(){
             self.userModel = user
         }
         saveUser()
+        
+        // Hide the get started button until a vehicle type or model has been chosen
+        self.getStarted.isHidden = true
+        
+        self.carButton.layer.cornerRadius = 7
+        self.motorcycleButton.layer.cornerRadius = 7
+        self.suvButton.layer.cornerRadius = 7
+        self.truckButton.layer.cornerRadius = 7
     }
     
     override func didReceiveMemoryWarning() {
@@ -46,24 +56,98 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, STPPaymentCon
         // Dispose of any resources that can be recreated.
     }
     
-    // MARK: Navigation
-    @IBAction func setupPayment(_ sender: Any) {
-        self.paymentContext.presentPaymentMethodsViewController()
+    func locationManager(manager: CLLocationManager!, didChangeAuthorizationStatus status: CLAuthorizationStatus) {
+        switch status {
+        case .notDetermined:
+            // If status has not yet been determied, ask for authorization
+            manager.requestWhenInUseAuthorization()
+            locationServicesDenied = false
+            break
+        case .authorizedWhenInUse, .authorizedAlways:
+            // If authorized when in use
+            manager.startUpdatingLocation()
+            locationServicesDenied = false
+            break
+        case .restricted, .denied:
+            // If restricted by e.g. parental controls. User can't enable Location Services
+            // If user denied your app access to Location Services, they can grant access from Settings.app
+            locationServicesDenied = true
+            break
+        }
     }
     
-    @IBAction func setupVehicle(_ sender: Any) {
+    func checkLocationPrivileges(){
+        locManager.requestWhenInUseAuthorization()
+        if CLLocationManager.locationServicesEnabled()  {
+            switch CLLocationManager.authorizationStatus() {
+            case .notDetermined, .restricted, .denied:
+                canShowUserLocation = false
+                print("No access")
+            case .authorizedAlways, .authorizedWhenInUse:
+                canShowUserLocation = true
+                print("Access")
+            }
+        } else {
+            print("Location services are not enabled")
+            canShowUserLocation = false
+        }
+    }
+    
+    
+    @IBAction func selectVehicleType(_ sender: UIButton) {
+        let transitButtons = [motorcycleButton, carButton, suvButton, truckButton, nil];
+        for button in transitButtons {
+            if (button == sender) {
+                self.getStarted.isHidden = false
+                button?.isSelected = true
+                button?.backgroundColor = UIColor(red:0.16, green:0.54, blue:0.32, alpha:1.0)
+            }
+            else {
+                button?.isSelected = false
+                button?.backgroundColor = UIColor.clear
+            }
+        }
+        // update user model vehicle emissions
+        switch sender{
+        case motorcycleButton:
+            self.userModel?.CO2GramsPerMile = motorcycleCO2GramsPerMile
+        case carButton:
+            self.userModel?.CO2GramsPerMile = carCO2GramsPerMile
+        case truckButton:
+            self.userModel?.CO2GramsPerMile = truckCO2GramsPerMile
+        case suvButton:
+            self.userModel?.CO2GramsPerMile = suvCO2GramsPerMile
+        default:
+            print ("No selected vehicle type")
+        }
+        saveUser()
+    }
+    
+    @IBAction func setupVehicleMakeAndModel(_ sender: Any) {
+        self.getStarted.isHidden = false
         performSegue(withIdentifier: "vehicleSettings", sender: nil)
     }
     
     @IBAction func launchBaseView(_ sender: Any) {
-        // Once setup is done, update the root view controller so we don't unwind back to the setup view
-        let appDelegate = UIApplication.shared.delegate as! AppDelegate
-        let storyboard = UIStoryboard(name: "Main", bundle: nil)
-        let baseViewController = storyboard.instantiateViewController(withIdentifier: "BaseViewController")
-        appDelegate.window = UIWindow(frame: UIScreen.main.bounds)
-        appDelegate.window!.rootViewController = baseViewController
-        appDelegate.window?.makeKeyAndVisible()
-        performSegue(withIdentifier: "baseView", sender: nil)
+        checkLocationPrivileges()
+        if (canShowUserLocation! == true){
+            // Once setup is done, update the root view controller so we don't unwind back to the setup view
+            let appDelegate = UIApplication.shared.delegate as! AppDelegate
+            let storyboard = UIStoryboard(name: "Main", bundle: nil)
+            let baseViewController = storyboard.instantiateViewController(withIdentifier: "BaseViewController")
+            appDelegate.window = UIWindow(frame: UIScreen.main.bounds)
+            appDelegate.window!.rootViewController = baseViewController
+            appDelegate.window?.makeKeyAndVisible()
+            performSegue(withIdentifier: "baseView", sender: nil)
+        }
+        else if (locationServicesDenied){
+            let title = "Location Services Not Enabled"
+            let message = "Please allow NavSets to access your location.  This can be updated in the Settings app."
+            let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            let action = UIAlertAction(title: "OK", style: .default, handler: nil)
+            alertController.addAction(action)
+            self.present(alertController, animated: true, completion: nil)
+        }
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -99,23 +183,6 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, STPPaymentCon
         }
     }
     
-    // MARK: STPPaymentContextDelegate - need these functions here but not actually doing anything
-    
-    func paymentContext(_ paymentContext: STPPaymentContext, didFailToLoadWithError error: Error) {
-        print("[ERROR]: Unrecognized error while loading payment context: \(error)");
-    }
-    
-    func paymentContextDidChange(_ paymentContext: STPPaymentContext) {
-        print ("payment context changed")
-    }
-    
-    func paymentContext(_ paymentContext: STPPaymentContext, didCreatePaymentResult paymentResult: STPPaymentResult, completion: @escaping STPErrorBlock) {
-        print ("payment result created")
-    }
-    
-    func paymentContext(_ paymentContext: STPPaymentContext, didFinishWith status: STPPaymentStatus, error: Error?) {
-        print ("payment finished with status")
-    }
     
     //MARK: Actions
     @IBAction func unwindToSelector(sender: UIStoryboardSegue){

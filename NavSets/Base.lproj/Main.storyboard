@@ -19,38 +19,127 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="PpK-gn-Une">
-                                <rect key="frame" x="112" y="86" width="150" height="30"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <state key="normal" title="Set Vehicle"/>
-                                <connections>
-                                    <action selector="setupVehicle:" destination="CNw-en-aTM" eventType="touchUpInside" id="HqY-YY-HYd"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Ldv-0e-jOs">
-                                <rect key="frame" x="112" y="542" width="150" height="30"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Ldv-0e-jOs">
+                                <rect key="frame" x="129" y="500" width="117" height="30"/>
                                 <state key="normal" title="Let's Get Started"/>
                                 <connections>
                                     <action selector="launchBaseView:" destination="CNw-en-aTM" eventType="touchUpInside" id="b3y-Sn-SJn"/>
                                 </connections>
                             </button>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="8qo-v6-vMc">
-                                <rect key="frame" x="112" y="149" width="150" height="30"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <state key="normal" title="Set Payment"/>
+                            <textView clipsSubviews="YES" multipleTouchEnabled="YES" userInteractionEnabled="NO" contentMode="scaleToFill" textAlignment="center" adjustsFontForContentSizeCategory="YES" translatesAutoresizingMaskIntoConstraints="NO" id="n9F-7u-eXq">
+                                <rect key="frame" x="67" y="210" width="240" height="99"/>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="99" id="xaI-9q-ejS"/>
+                                </constraints>
+                                <string key="text">Thank you for taking responsibility for your externalities.  Please select your vehicle type or choose a specific make and model.</string>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
+                            </textView>
+                            <textView clipsSubviews="YES" multipleTouchEnabled="YES" userInteractionEnabled="NO" contentMode="scaleToFill" text="Welcome to NavSets" textAlignment="center" adjustsFontForContentSizeCategory="YES" translatesAutoresizingMaskIntoConstraints="NO" id="2HX-C5-zW7">
+                                <rect key="frame" x="67" y="90" width="240" height="50"/>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="50" id="E0c-B7-wgL"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" type="system" pointSize="23"/>
+                                <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
+                            </textView>
+                            <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="32" translatesAutoresizingMaskIntoConstraints="NO" id="cm8-IC-ppf">
+                                <rect key="frame" x="67" y="334" width="240" height="36"/>
+                                <subviews>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="zkh-46-Jna">
+                                        <rect key="frame" x="0.0" y="0.0" width="36" height="36"/>
+                                        <state key="normal" image="motorcycle">
+                                            <color key="titleColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                        </state>
+                                        <state key="selected" image="motorcycle"/>
+                                        <connections>
+                                            <action selector="selectVehicleType:" destination="CNw-en-aTM" eventType="touchUpInside" id="IIf-tu-nOb"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="eP0-qm-tCU">
+                                        <rect key="frame" x="68" y="0.0" width="36" height="36"/>
+                                        <state key="normal" image="car_profile">
+                                            <color key="titleColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                        </state>
+                                        <state key="selected" image="car_profile"/>
+                                        <connections>
+                                            <action selector="selectVehicleType:" destination="CNw-en-aTM" eventType="touchUpInside" id="AEi-cM-kM5"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Lpm-FD-ZCD">
+                                        <rect key="frame" x="136" y="0.0" width="36" height="36"/>
+                                        <state key="normal" image="suv">
+                                            <color key="titleColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                        </state>
+                                        <state key="selected" image="suv"/>
+                                        <connections>
+                                            <action selector="selectVehicleType:" destination="CNw-en-aTM" eventType="touchUpInside" id="Tqk-vm-8Nu"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Z7n-PV-RaR">
+                                        <rect key="frame" x="204" y="0.0" width="36" height="36"/>
+                                        <state key="normal" image="truck">
+                                            <color key="titleColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                        </state>
+                                        <state key="selected" image="truck"/>
+                                        <connections>
+                                            <action selector="selectVehicleType:" destination="CNw-en-aTM" eventType="touchUpInside" id="ekF-dR-8J6"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                            </stackView>
+                            <textView clipsSubviews="YES" multipleTouchEnabled="YES" userInteractionEnabled="NO" contentMode="scaleToFill" text="Or" textAlignment="center" adjustsFontForContentSizeCategory="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Muy-b8-vJU">
+                                <rect key="frame" x="150" y="380" width="74" height="30"/>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="30" id="gI5-7v-1hl"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
+                            </textView>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="PpK-gn-Une">
+                                <rect key="frame" x="90" y="420" width="195" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="30" id="1Ui-Ga-7Ua"/>
+                                </constraints>
+                                <state key="normal" title="Select Make and Model"/>
                                 <connections>
-                                    <action selector="setupPayment:" destination="CNw-en-aTM" eventType="touchUpInside" id="W7N-I3-KeA"/>
+                                    <action selector="setupVehicleMakeAndModel:" destination="CNw-en-aTM" eventType="touchUpInside" id="HqY-YY-HYd"/>
                                 </connections>
                             </button>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <constraints>
+                            <constraint firstItem="2HX-C5-zW7" firstAttribute="leading" secondItem="cm8-IC-ppf" secondAttribute="leading" id="1vi-Wk-tz4"/>
+                            <constraint firstItem="Muy-b8-vJU" firstAttribute="top" secondItem="cm8-IC-ppf" secondAttribute="bottom" constant="10" id="3tg-En-I5k"/>
+                            <constraint firstItem="2HX-C5-zW7" firstAttribute="centerX" secondItem="Muy-b8-vJU" secondAttribute="centerX" id="5SU-bS-EqG"/>
+                            <constraint firstItem="Ldv-0e-jOs" firstAttribute="top" secondItem="PpK-gn-Une" secondAttribute="bottom" constant="50" id="7tz-cp-2Jn"/>
+                            <constraint firstItem="2HX-C5-zW7" firstAttribute="trailing" secondItem="cm8-IC-ppf" secondAttribute="trailing" id="IIz-6E-xBE"/>
+                            <constraint firstItem="2HX-C5-zW7" firstAttribute="centerX" secondItem="PpK-gn-Une" secondAttribute="centerX" id="IX9-e8-5r2"/>
+                            <constraint firstItem="n9F-7u-eXq" firstAttribute="top" secondItem="2HX-C5-zW7" secondAttribute="bottom" constant="70" id="Ink-He-eHZ"/>
+                            <constraint firstItem="PpK-gn-Une" firstAttribute="top" secondItem="Muy-b8-vJU" secondAttribute="bottom" constant="10" id="LBE-H0-Wx0"/>
+                            <constraint firstItem="2HX-C5-zW7" firstAttribute="centerX" secondItem="Pzd-vd-aBw" secondAttribute="centerX" id="OQt-CT-XYZ"/>
+                            <constraint firstItem="PpK-gn-Une" firstAttribute="centerX" secondItem="Muy-b8-vJU" secondAttribute="centerX" id="W2B-Ij-841"/>
+                            <constraint firstItem="PpK-gn-Une" firstAttribute="leading" secondItem="Pzd-vd-aBw" secondAttribute="leading" constant="90" id="Xhy-jN-BVW"/>
+                            <constraint firstItem="2HX-C5-zW7" firstAttribute="trailing" secondItem="n9F-7u-eXq" secondAttribute="trailing" id="cKT-3E-8re"/>
+                            <constraint firstItem="Muy-b8-vJU" firstAttribute="leading" secondItem="Pzd-vd-aBw" secondAttribute="leading" constant="150" id="f2i-5j-gdI"/>
+                            <constraint firstItem="2HX-C5-zW7" firstAttribute="top" secondItem="Pzd-vd-aBw" secondAttribute="top" constant="70" id="hfO-JR-8fn"/>
+                            <constraint firstItem="2HX-C5-zW7" firstAttribute="centerX" secondItem="Ldv-0e-jOs" secondAttribute="centerX" id="lDz-PA-qUX"/>
+                            <constraint firstItem="2HX-C5-zW7" firstAttribute="leading" secondItem="n9F-7u-eXq" secondAttribute="leading" id="lK1-Ta-ffQ"/>
+                            <constraint firstItem="n9F-7u-eXq" firstAttribute="centerX" secondItem="Muy-b8-vJU" secondAttribute="centerX" id="rID-jL-4eI"/>
+                            <constraint firstItem="cm8-IC-ppf" firstAttribute="top" secondItem="n9F-7u-eXq" secondAttribute="bottom" constant="25" id="wlK-yX-xL6"/>
+                        </constraints>
                         <viewLayoutGuide key="safeArea" id="Pzd-vd-aBw"/>
                     </view>
                     <connections>
+                        <outlet property="carButton" destination="eP0-qm-tCU" id="4Cv-dg-XyI"/>
                         <outlet property="getStarted" destination="Ldv-0e-jOs" id="dbo-3T-LWn"/>
-                        <outlet property="setPayment" destination="8qo-v6-vMc" id="1jx-Qx-5H4"/>
+                        <outlet property="motorcycleButton" destination="zkh-46-Jna" id="xQd-x9-HeA"/>
                         <outlet property="setVehicle" destination="PpK-gn-Une" id="9M1-Tn-isR"/>
+                        <outlet property="suvButton" destination="Lpm-FD-ZCD" id="cax-d3-3n7"/>
+                        <outlet property="truckButton" destination="Z7n-PV-RaR" id="OFi-28-uYS"/>
                         <segue destination="BYZ-38-t0r" kind="presentation" identifier="baseView" id="eaH-r5-UDk"/>
                         <segue destination="6fb-Bf-SRU" kind="presentation" identifier="vehicleSettings" id="A2e-Pr-sdB"/>
                     </connections>
@@ -68,9 +157,9 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Search for locations" textAlignment="natural" clearsOnBeginEditing="YES" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="fZD-DA-FID">
-                                <rect key="frame" x="20" y="40" width="335" height="35"/>
+                                <rect key="frame" x="20" y="70" width="335" height="55"/>
                                 <constraints>
-                                    <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="35" id="Dnt-qV-Qma"/>
+                                    <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="55" id="Dnt-qV-Qma"/>
                                 </constraints>
                                 <nil key="textColor"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
@@ -80,7 +169,7 @@
                                 </connections>
                             </textField>
                             <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="2Ig-6X-Oht">
-                                <rect key="frame" x="16" y="75" width="343" height="400"/>
+                                <rect key="frame" x="16" y="125" width="343" height="400"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="400" id="GVb-s6-0Na"/>
@@ -100,13 +189,23 @@
                                     <outlet property="delegate" destination="BYZ-38-t0r" id="lWD-er-12P"/>
                                 </connections>
                             </tableView>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ykv-ac-DgO">
+                                <rect key="frame" x="20" y="29" width="36" height="36"/>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <state key="normal" image="location"/>
+                                <connections>
+                                    <action selector="zoomToCurrentLocation:" destination="BYZ-38-t0r" eventType="touchUpInside" id="pVa-2s-8xH"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="fZD-DA-FID" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="20" id="1e5-RI-Fpj"/>
+                            <constraint firstItem="fZD-DA-FID" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="50" id="1e5-RI-Fpj"/>
                             <constraint firstItem="2Ig-6X-Oht" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leadingMargin" id="4f0-8j-8Gy"/>
                             <constraint firstItem="2Ig-6X-Oht" firstAttribute="top" secondItem="fZD-DA-FID" secondAttribute="bottom" id="6Zy-sK-mdU"/>
                             <constraint firstItem="fZD-DA-FID" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="20" id="Ur9-Jh-8eZ"/>
+                            <constraint firstItem="ykv-ac-DgO" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="20" id="YHr-8E-UqC"/>
+                            <constraint firstItem="fZD-DA-FID" firstAttribute="top" secondItem="ykv-ac-DgO" secondAttribute="bottom" constant="5" id="aAI-6L-hCn"/>
                             <constraint firstItem="2Ig-6X-Oht" firstAttribute="trailing" secondItem="8bC-Xf-vdC" secondAttribute="trailingMargin" id="ihb-8Y-GDG"/>
                             <constraint firstItem="2Ig-6X-Oht" firstAttribute="centerX" secondItem="fZD-DA-FID" secondAttribute="centerX" id="vnE-9I-u6m"/>
                         </constraints>
@@ -114,6 +213,7 @@
                     </view>
                     <navigationItem key="navigationItem" id="Miu-cj-V0g"/>
                     <connections>
+                        <outlet property="currentLocationButton" destination="ykv-ac-DgO" id="IYD-oc-gpg"/>
                         <outlet property="locationSearchTextField" destination="fZD-DA-FID" id="tJ3-MC-cAC"/>
                         <outlet property="resultsTable" destination="2Ig-6X-Oht" id="nWt-Yy-2fQ"/>
                     </connections>
@@ -253,13 +353,12 @@
                                     <stackView opaque="NO" contentMode="scaleToFill" alignment="center" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="liB-P6-1db">
                                         <rect key="frame" x="20" y="30" width="335" height="68"/>
                                         <subviews>
-                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Xo3-jQ-Vs5">
-                                                <rect key="frame" x="0.0" y="19" width="25" height="30"/>
-                                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Xo3-jQ-Vs5">
+                                                <rect key="frame" x="0.0" y="16" width="25" height="36"/>
                                                 <constraints>
                                                     <constraint firstAttribute="width" constant="25" id="UJG-HX-yw0"/>
                                                 </constraints>
-                                                <state key="normal" title="&lt;">
+                                                <state key="normal" image="back_arrow">
                                                     <color key="titleColor" red="0.054901960780000002" green="0.54901960780000003" blue="0.29761904760000002" alpha="0.80000000000000004" colorSpace="calibratedRGB"/>
                                                 </state>
                                                 <connections>
@@ -270,7 +369,7 @@
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="tyr-Qj-ojf">
                                                 <rect key="frame" x="33" y="0.0" width="250" height="68"/>
                                                 <subviews>
-                                                    <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Your Location" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="46i-Nm-QXY">
+                                                    <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="    Your Location" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="46i-Nm-QXY">
                                                         <rect key="frame" x="0.0" y="0.0" width="250" height="30"/>
                                                         <nil key="textColor"/>
                                                         <fontDescription key="fontDescription" type="system" pointSize="14"/>
@@ -436,8 +535,11 @@
                                 </connections>
                             </tableView>
                             <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="bKv-qL-fyx">
-                                <rect key="frame" x="0.0" y="517" width="375" height="150"/>
+                                <rect key="frame" x="0.0" y="542" width="375" height="125"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="125" id="DiO-CS-z87"/>
+                                </constraints>
                                 <prototypes>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="settingsCell" id="QdL-d2-LoL">
                                         <rect key="frame" x="0.0" y="28" width="375" height="44"/>
@@ -452,7 +554,6 @@
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
-                            <constraint firstItem="bKv-qL-fyx" firstAttribute="top" secondItem="H31-9M-StG" secondAttribute="top" constant="-25" id="8aa-Tu-NeK"/>
                             <constraint firstAttribute="bottomMargin" secondItem="bKv-qL-fyx" secondAttribute="bottom" id="AFr-1D-NBZ"/>
                             <constraint firstItem="bKv-qL-fyx" firstAttribute="leading" secondItem="H31-9M-StG" secondAttribute="leading" id="E2c-bF-FUh"/>
                             <constraint firstItem="IYO-mn-RWX" firstAttribute="trailing" secondItem="H31-9M-StG" secondAttribute="trailing" id="Ipa-Pk-PFN"/>
@@ -508,18 +609,24 @@
         </scene>
     </scenes>
     <resources>
+        <image name="back_arrow" width="36" height="36"/>
         <image name="bike_selected" width="25" height="25"/>
         <image name="bike_unselected" width="25" height="25"/>
+        <image name="car_profile" width="36" height="36"/>
         <image name="car_selected" width="25" height="25"/>
         <image name="car_unselected" width="25" height="25"/>
+        <image name="location" width="36" height="36"/>
+        <image name="motorcycle" width="36" height="36"/>
         <image name="settings" width="25" height="25"/>
+        <image name="suv" width="36" height="36"/>
         <image name="switch_arrows" width="25" height="25"/>
+        <image name="truck" width="36" height="36"/>
         <image name="uber_selected" width="25" height="25"/>
         <image name="uber_unselected" width="25" height="25"/>
         <image name="walk_selected" width="25" height="25"/>
         <image name="walk_unselected" width="25" height="25"/>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="5Ms-5Q-NFk"/>
+        <segue reference="A2e-Pr-sdB"/>
     </inferredMetricsTieBreakers>
 </document>

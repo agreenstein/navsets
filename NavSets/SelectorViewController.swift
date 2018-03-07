@@ -29,6 +29,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     @IBOutlet weak var bikeButton: UIButton!
     @IBOutlet weak var uberButton: UIButton!
     @IBOutlet weak var settingsButton: UIButton!
+//    @IBOutlet weak var currentLocationButton: UIButton!
     @IBOutlet weak var settingsTable: UITableView!
     @IBOutlet weak var originGeocodeResultsTable: UITableView!
     @IBOutlet weak var destinationGeocodeResultsTable: UITableView!
@@ -117,6 +118,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         
         // Set the origin field text to current location by default (and hide table because it shows on text update)
         originField.text = "Current Location"
+//        currentLocationButton.isHidden = true
         if let destinationName = routeModel?.destinationName {
              destinationField.text = destinationName
         }
@@ -139,14 +141,15 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         view.addSubview(launchUberButton)
         launchUberButton.isHidden = true
         
-        // add rounding to corners of buttons
+        // add rounding to corners of buttons and tables
         self.startButton.layer.cornerRadius = 7
-//        self.paymentButton.layer.cornerRadius = 7
         self.backButton.layer.cornerRadius = 7
         self.carButton.layer.cornerRadius = 7
         self.bikeButton.layer.cornerRadius = 7
         self.walkButton.layer.cornerRadius = 7
         self.uberButton.layer.cornerRadius = 7
+        self.originGeocodeResultsTable.layer.cornerRadius = 7
+        self.destinationGeocodeResultsTable.layer.cornerRadius = 7
     }
 
     override func didReceiveMemoryWarning() {
@@ -291,6 +294,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     }
     
     func textFieldDidBeginEditing(_ textField: UITextField) {
+//        currentLocationButton.isHidden = false
         textField.text = ""
         if (textField == destinationField) {
             destinationGeocodeResultsTable.isHidden = false
@@ -303,6 +307,10 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     }
     
     @objc func textFieldDidChange(_ textField: UITextField) {
+//        currentLocationButton.isHidden = true
+//        if textField.text == ""{
+//            currentLocationButton.isHidden = false
+//        }
         geocodingDataTask?.cancel()
         let options = ForwardGeocodeOptions(query: textField.text!)
         options.focalLocation = CLLocation(latitude: (mapView.userLocation?.coordinate.latitude)!, longitude: (mapView.userLocation?.coordinate.longitude)!)
@@ -337,6 +345,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         else if (textField == originField) {
             originGeocodeResultsTable.isHidden = true
         }
+//        currentLocationButton.isHidden = true
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -398,6 +407,8 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
                     self.routeModel!.startLocation = (placemark?.location.coordinate)!
                     self.originField.text = placemark?.qualifiedName
                     self.originField.endEditing(true)
+                    // Hide the current location button
+//                    currentLocationButton.isHidden = true
                 }
                 else {
                     shouldCalculateRoute = false
@@ -456,6 +467,14 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         }
     }
     
+//    @IBAction func setToCurrentLocation(_ sender: UIButton) {
+//        if sender === currentLocationButton{
+//            // Update the route model and set the text in the search field
+//            self.routeModel!.startLocation = (mapView.userLocation?.coordinate)!
+//            self.originField.text = "Current Location"
+//            self.originField.endEditing(true)
+//        }
+//    }
     
     @IBAction func back(_ sender: UIButton) {
         if sender === backButton{

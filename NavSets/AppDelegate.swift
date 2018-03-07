@@ -37,7 +37,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         var initialViewController = storyboard.instantiateViewController(withIdentifier: "BaseViewController")
         // Determine the view we should start with
-        let firstLaunch = UserDefaults.standard.bool(forKey: "firstLaunch")
+        var firstLaunch = UserDefaults.standard.bool(forKey: "firstLaunch")
+        // TEMPORARILY make firstLaunch always true so can view setup walkthrough screen
+        firstLaunch = true
         if firstLaunch  {
             print("First launch, setting UserDefault")
             initialViewController = storyboard.instantiateViewController(withIdentifier: "StartupViewController")
@@ -46,8 +48,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             // Don't update the initial view controller
             print("Not first launch")
         }
-        // TEMPORARILY reset firstLaunch boolean so can view setup walkthrough screen
-        UserDefaults.standard.set(true, forKey: "firstLaunch")
         self.window?.rootViewController = initialViewController
         self.window?.makeKeyAndVisible()
         return true

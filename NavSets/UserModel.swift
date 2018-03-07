@@ -15,7 +15,6 @@ struct PropertyKey{
     static let carYear = "carYear"
     static let CO2GramsPerMile = "CO2GramsPerMile"
     static let stripeID = "stripeID"
-//    static let routeList = "routeList"
     static let cumulativeCost = "cumulativeCost"
 }
 
@@ -46,14 +45,14 @@ class UserModel: NSObject, NSCoding{
         cumulativeCost = 0
     }
     
-    init?(carMake: String, carModel: String, carYear: String, /*routeList: [RouteModel]*/ cumulativeCost: Int){
+    init?(carMake: String, carModel: String, carYear: String, cumulativeCost: Int){
         self.carMake = carMake
         self.carModel = carModel
         self.carYear = carYear
         self.cumulativeCost = cumulativeCost
     }
     
-    init?(carMake: String?, carModel: String?, carYear: String?, gramsPerMile: Float?, stripeID: String?, /*routeList: [RouteModel]?*/ cumulativeCost: Int?){
+    init?(carMake: String?, carModel: String?, carYear: String?, gramsPerMile: Float?, stripeID: String?, cumulativeCost: Int?){
         self.carMake = carMake
         self.carModel = carModel
         self.carYear = carYear
@@ -86,7 +85,6 @@ class UserModel: NSObject, NSCoding{
         aCoder.encode(carYear, forKey: PropertyKey.carYear)
         aCoder.encode(CO2GramsPerMile, forKey: PropertyKey.CO2GramsPerMile)
         aCoder.encode(stripeID, forKey: PropertyKey.stripeID)
-//        aCoder.encode(routeList, forKey: PropertyKey.routeList)
         aCoder.encode(cumulativeCost, forKey: PropertyKey.cumulativeCost)
     }
     
