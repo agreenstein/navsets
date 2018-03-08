@@ -28,8 +28,8 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     @IBOutlet weak var walkButton: UIButton!
     @IBOutlet weak var bikeButton: UIButton!
     @IBOutlet weak var uberButton: UIButton!
+    @IBOutlet weak var totalCostProgress: UIProgressView!
     @IBOutlet weak var settingsButton: UIButton!
-//    @IBOutlet weak var currentLocationButton: UIButton!
     @IBOutlet weak var settingsTable: UITableView!
     @IBOutlet weak var originGeocodeResultsTable: UITableView!
     @IBOutlet weak var destinationGeocodeResultsTable: UITableView!
@@ -48,6 +48,9 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     let customerContext: STPCustomerContext
     let activityIndicator = UIActivityIndicatorView(activityIndicatorStyle: .gray)
     let insets = UIEdgeInsets(top: 35, left: 25, bottom: 15, right: 25)
+    var chargeThreshold = 500
+    var justChargedCard = false
+    var previousOverpaid = 0
     var paymentInProgress: Bool = false {
         didSet {
             UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseIn, animations: {
@@ -141,6 +144,10 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         view.addSubview(launchUberButton)
         launchUberButton.isHidden = true
         
+        // initialize the progress bar
+        totalCostProgress.transform = CGAffineTransform(rotationAngle: .pi * -0.5)
+        updateCostProgress(animated: true)
+        
         // add rounding to corners of buttons and tables
         self.startButton.layer.cornerRadius = 7
         self.backButton.layer.cornerRadius = 7
@@ -150,6 +157,9 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         self.uberButton.layer.cornerRadius = 7
         self.originGeocodeResultsTable.layer.cornerRadius = 7
         self.destinationGeocodeResultsTable.layer.cornerRadius = 7
+        self.totalCostProgress.layer.cornerRadius = 7
+        // also need to clip progress bar bounds
+        self.totalCostProgress.clipsToBounds = true
     }
 
     override func didReceiveMemoryWarning() {
@@ -157,6 +167,17 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         // Dispose of any resources that can be recreated.
     }
     
+    func updateCostProgress(animated: Bool){
+//        var currTotal = self.userModel?.cumulativeCost
+//        let maxTotal = chargeThreshold
+//        // if the user bought a route but didn't drive the whole thing and has a negative current total, add that amount to the max total so that rather than just showing nothing the progress bar will have a small amount until the user breaks 0
+////        if (currTotal! < 0){
+////            currTotal = 0
+////        }
+//        let currTotalFraction = Float(currTotal!) / Float(maxTotal)
+        let currTotalFraction = Float((self.userModel?.cumulativeCost)!) / Float(chargeThreshold)
+        self.totalCostProgress.setProgress(currTotalFraction, animated: animated)
+    }
     
     // Calculate route to use for navigation
     func calculateRoute(from origin: CLLocationCoordinate2D, to destination: CLLocationCoordinate2D, transitMode profileID: MBDirectionsProfileIdentifier? = .automobileAvoidingTraffic, completion: @escaping (Route?, Error?) -> ()) {
@@ -421,6 +442,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
                 if (placemark != nil){
                     // Update the route model and set the text in the search field
                     self.routeModel!.destinationLocation = (placemark?.location.coordinate)!
+                    self.routeModel!.destinationName = placemark?.qualifiedName
                     self.destinationField.text = placemark?.qualifiedName
                     self.destinationField.endEditing(true)
                 }
@@ -494,10 +516,15 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
             if (selectedTransitButton == carButton) || (selectedTransitButton == uberButton){
                 self.userModel?.cumulativeCost += (self.routeModel?.routeCost)!
                 saveUser()
-                let chargeThreshold = 500
+                // justChargedCard will only be true right after a successful transaction
+                justChargedCard = false
+                updateCostProgress(animated: true)
                 if let sum = self.userModel?.cumulativeCost{
                     if (sum > chargeThreshold){
-                        self.paymentContext.paymentAmount = sum
+                        print (sum)
+                        print (chargeThreshold)
+                        // if user had previously overpaid for a route and has a higher threshold, subtract that off the amount that gets charged now
+                        self.paymentContext.paymentAmount = sum - previousOverpaid
                         let title = "Before you go..."
                         let message = "Purchasing this route will put your balance over the $5.00 threshold and your card will be charged."
                         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
@@ -623,17 +650,24 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
             // remove the route that wasn't actually purchased
             self.userModel?.cumulativeCost -= (self.routeModel?.routeCost)!
             saveUser()
+            updateCostProgress(animated: true)
         case .success:
             title = "Success"
             message = "Offsets purchased"
             print ("payment success")
-            // reset the cumulative cost
+            // reset the cumulative cost, charge threshold, and previous overpaid
             self.userModel?.cumulativeCost = 0
             saveUser()
+            chargeThreshold = 500
+            previousOverpaid = 0
+            print ("reset charge threshold and previous overpaid")
+            justChargedCard = true
+            updateCostProgress(animated: true)
         case .userCancellation:
             // remove the route that wasn't actually purchased
             self.userModel?.cumulativeCost -= (self.routeModel?.routeCost)!
             saveUser()
+            updateCostProgress(animated: true)
             return
         }
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
@@ -671,24 +705,34 @@ extension SelectorViewController: NavigationViewControllerDelegate {
     func navigationViewControllerDidCancelNavigation(_ navigationViewController: NavigationViewController) {
         print ("navigation canceled")
         navigationViewController.dismiss(animated: true, completion: nil)
-        // True up the actual distance traveled -> only do this if <90% of the total distance (and car is selected transit mode)
+        // True up the actual distance traveled -> only do this if <90% of the total distance (and car is selected transit mode, not done for uber)
         // Calculations done assuming that the route traveled is similar enough to the originally charged one
         // so that we can just multiply the fraction traveled by the original cost to determine how much the user should have paid
         if (selectedTransitButton == carButton){
             let fractionTraveled = navigationViewController.routeController.routeProgress.fractionTraveled
             if fractionTraveled < 0.9 {
                 let amountOverpaid = (1 - fractionTraveled) * Double((self.routeModel?.routeCost)!)
-                self.userModel?.cumulativeCost -= Int(amountOverpaid)
-                saveUser()
-                // routeCost, cumulativeCost, and amountOverpaid are in cents so need to divide by 100
-                let amountOverpaidString = String(format: "$%.2f", amountOverpaid / 100)
-                // present an alert to tell the user how much they were actually charged for
-                let title = "Thanks for Driving" // should change this
-                let message = "We detected that you didn't drive the full route you purchased.  Your account has been credited with the difference of " + amountOverpaidString
-                let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
-                let action = UIAlertAction(title: "OK", style: .default, handler: nil)
-                alertController.addAction(action)
-                self.present(alertController, animated: true, completion: nil)
+                // if user was just charged but didn't drive the whole way, don't change the cumulative cost (keep it at 0) but instead change the charge threshold (until user hits that and needs to purchase again)
+                if (justChargedCard){
+                    previousOverpaid = Int(amountOverpaid)
+                    chargeThreshold += Int(amountOverpaid)
+                    print ("New charge threshold:g")
+                    print (chargeThreshold)
+                    // routeCost, cumulativeCost, and amountOverpaid are in cents so need to divide by 100
+                    let amountOverpaidString = String(format: "$%.2f", amountOverpaid / 100)
+                    // present an alert to tell the user how much they were actually charged for
+                    let title = "Thanks for using NavSets" // should change this
+                    let message = "We detected that you didn't drive the full route you purchased.  Your account has been credited with the difference of " + amountOverpaidString
+                    let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+                    let action = UIAlertAction(title: "OK", style: .default, handler: nil)
+                    alertController.addAction(action)
+                    self.present(alertController, animated: true, completion: nil)
+                }
+                else{
+                    self.userModel?.cumulativeCost -= Int(amountOverpaid)
+                    saveUser()
+                }
+                updateCostProgress(animated: true)
             }
         }
     }

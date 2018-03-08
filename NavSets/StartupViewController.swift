@@ -17,7 +17,7 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationMan
     var mapView: MGLMapView!
     var canShowUserLocation: Bool!
     var locationServicesDenied: Bool!
-    @IBOutlet weak var setVehicle: UIButton!
+    @IBOutlet weak var vehicleMakeAndModel: UIButton!
     @IBOutlet weak var getStarted: UIButton!
     @IBOutlet weak var motorcycleButton: UIButton!
     @IBOutlet weak var carButton: UIButton!
@@ -49,6 +49,7 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationMan
         self.motorcycleButton.layer.cornerRadius = 7
         self.suvButton.layer.cornerRadius = 7
         self.truckButton.layer.cornerRadius = 7
+        self.vehicleMakeAndModel.layer.cornerRadius = 7
     }
     
     override func didReceiveMemoryWarning() {
@@ -95,6 +96,10 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationMan
     
     
     @IBAction func selectVehicleType(_ sender: UIButton) {
+        // deselect the make and model button
+        vehicleMakeAndModel.isSelected = false
+        vehicleMakeAndModel.backgroundColor = UIColor.clear
+        vehicleMakeAndModel.setTitle("Select Make and Model", for: .normal)
         let transitButtons = [motorcycleButton, carButton, suvButton, truckButton, nil];
         for button in transitButtons {
             if (button == sender) {
@@ -124,6 +129,15 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationMan
     }
     
     @IBAction func setupVehicleMakeAndModel(_ sender: Any) {
+        // deselect the transit buttons
+        motorcycleButton.isSelected = false
+        motorcycleButton.backgroundColor = UIColor.clear
+        carButton.isSelected = false
+        carButton.backgroundColor = UIColor.clear
+        truckButton.isSelected = false
+        truckButton.backgroundColor = UIColor.clear
+        suvButton.isSelected = false
+        suvButton.backgroundColor = UIColor.clear
         self.getStarted.isHidden = false
         performSegue(withIdentifier: "vehicleSettings", sender: nil)
     }
@@ -190,6 +204,12 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationMan
             // set user model to be the model from the previous view
             self.userModel = user
             saveUser()
+            // Change the "set make and model" button to actually say the selected make and model
+            let makeAndModel = user.carMake! + " " + user.carModel!
+            self.vehicleMakeAndModel.setTitle(makeAndModel, for: .normal)
+            // select the make and model button
+            self.vehicleMakeAndModel.isSelected = true
+            self.vehicleMakeAndModel.backgroundColor = UIColor(red:0.16, green:0.54, blue:0.32, alpha:1.0)
         }
     }
     
