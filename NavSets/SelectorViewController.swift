@@ -33,6 +33,8 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     @IBOutlet weak var settingsTable: UITableView!
     @IBOutlet weak var originGeocodeResultsTable: UITableView!
     @IBOutlet weak var destinationGeocodeResultsTable: UITableView!
+    @IBOutlet weak var paymentHistoryView: UIView!
+    @IBOutlet weak var paymentHistoryButton: UIButton!
     var mapView: MGLMapView!
     var geocoder: Geocoder!
     var geocodingDataTask: URLSessionDataTask?
@@ -85,7 +87,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         mapView = MGLMapView(frame: mapFrame, styleURL: url)
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         let boundingBox = MGLCoordinateBounds(sw: (routeModel?.startLocation)!, ne: (routeModel?.destinationLocation)!)
-        mapView.setVisibleCoordinateBounds(boundingBox, edgePadding: insets, animated: false)
+        mapView.setVisibleCoordinateBounds(boundingBox, edgePadding: insets, animated: true)
         view.addSubview(mapView)
         view.sendSubview(toBack: mapView) // send the map view to the back, behind the other added UI elements
         
@@ -144,8 +146,9 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         view.addSubview(launchUberButton)
         launchUberButton.isHidden = true
         
-        // initialize the progress bar
-        totalCostProgress.transform = CGAffineTransform(rotationAngle: .pi * -0.5)
+        // initialize the payment history view (hide) and progress bar
+//        totalCostProgress.transform = CGAffineTransform(rotationAngle: .pi * -0.5)
+        paymentHistoryView.isHidden = true
         updateCostProgress(animated: true)
         
         // add rounding to corners of buttons and tables
@@ -160,6 +163,8 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         self.totalCostProgress.layer.cornerRadius = 7
         // also need to clip progress bar bounds
         self.totalCostProgress.clipsToBounds = true
+        // make payment history button circular
+        self.paymentHistoryButton.layer.cornerRadius = self.paymentHistoryButton.frame.size.width / 2;
     }
 
     override func didReceiveMemoryWarning() {
@@ -221,7 +226,13 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
                 self.lastRouteDistance = self.directionsRoute?.distance
                 let dist = (self.lastRouteDistance)! / 1609.34
                 let time = Int((self.directionsRoute?.expectedTravelTime)! / 60)
-                self.routeDistanceAndTime.text = ("\(String(time)) mins" + " (\(String(format: "%.1f", dist)) miles)")
+                let hours = Int(time/60)
+                let minutes = Int(time % 60)
+                var timeString = "\(String(hours)) hr \(String(minutes)) min"
+                if (hours < 1){
+                    timeString = "\(String(minutes)) min"
+                }
+                self.routeDistanceAndTime.text = (timeString + " (\(String(format: "%.1f", dist)) miles)")
             }
             var buttonString = "Start Navigation"
             
@@ -396,7 +407,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         }
         else{
             let cell = tableView.dequeueReusableCell(withIdentifier: "settingsCell", for: indexPath)
-            let settingsOptions = ["Update Payment", "Vehicle Settings", "Cancel"]
+            let settingsOptions = ["Payment Settings", "Vehicle Settings", "Cancel"]
             cell.textLabel?.text = settingsOptions[indexPath.item]
             return cell
         }
@@ -602,6 +613,13 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         }
     }
     
+    @IBAction func showPaymentHistory(_ sender: UIButton) {
+        paymentHistoryView.isHidden = false
+    }
+    
+    @IBAction func closePaymentHistory(_ sender: UIButton) {
+        paymentHistoryView.isHidden = true
+    }
     
     //MARK: Actions
     @IBAction func unwindToSelector(sender: UIStoryboardSegue){

@@ -16,17 +16,14 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationMan
     var userModel: UserModel?
     var mapView: MGLMapView!
     var canShowUserLocation: Bool!
-    var locationServicesDenied: Bool!
     @IBOutlet weak var vehicleMakeAndModel: UIButton!
     @IBOutlet weak var getStarted: UIButton!
-    @IBOutlet weak var motorcycleButton: UIButton!
     @IBOutlet weak var carButton: UIButton!
     @IBOutlet weak var suvButton: UIButton!
     @IBOutlet weak var truckButton: UIButton!
     
     // emissions constants
     let carCO2GramsPerMile = Float(375.3)
-    let motorcycleCO2GramsPerMile = Float(201.9)
     let suvCO2GramsPerMile = Float(406.6)
     let truckCO2GramsPerMile = Float(510.6)
     
@@ -35,6 +32,7 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationMan
         
         locManager = CLLocationManager()
         locManager.delegate = self
+        locManager.requestWhenInUseAuthorization()
         
         // load the user
         if let user = loadUser(){
@@ -46,7 +44,6 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationMan
         self.getStarted.isHidden = true
         
         self.carButton.layer.cornerRadius = 7
-        self.motorcycleButton.layer.cornerRadius = 7
         self.suvButton.layer.cornerRadius = 7
         self.truckButton.layer.cornerRadius = 7
         self.vehicleMakeAndModel.layer.cornerRadius = 7
@@ -62,23 +59,19 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationMan
         case .notDetermined:
             // If status has not yet been determied, ask for authorization
             manager.requestWhenInUseAuthorization()
-            locationServicesDenied = false
             break
         case .authorizedWhenInUse, .authorizedAlways:
             // If authorized when in use
             manager.startUpdatingLocation()
-            locationServicesDenied = false
             break
         case .restricted, .denied:
             // If restricted by e.g. parental controls. User can't enable Location Services
             // If user denied your app access to Location Services, they can grant access from Settings.app
-            locationServicesDenied = true
             break
         }
     }
     
     func checkLocationPrivileges(){
-        locManager.requestWhenInUseAuthorization()
         if CLLocationManager.locationServicesEnabled()  {
             switch CLLocationManager.authorizationStatus() {
             case .notDetermined, .restricted, .denied:
@@ -98,9 +91,10 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationMan
     @IBAction func selectVehicleType(_ sender: UIButton) {
         // deselect the make and model button
         vehicleMakeAndModel.isSelected = false
-        vehicleMakeAndModel.backgroundColor = UIColor.clear
+//        vehicleMakeAndModel.backgroundColor = UIColor.clear
+        vehicleMakeAndModel.backgroundColor = UIColor.groupTableViewBackground
         vehicleMakeAndModel.setTitle("Select Make and Model", for: .normal)
-        let transitButtons = [motorcycleButton, carButton, suvButton, truckButton, nil];
+        let transitButtons = [carButton, suvButton, truckButton, nil];
         for button in transitButtons {
             if (button == sender) {
                 self.getStarted.isHidden = false
@@ -109,13 +103,12 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationMan
             }
             else {
                 button?.isSelected = false
-                button?.backgroundColor = UIColor.clear
+//                button?.backgroundColor = UIColor.clear
+                button?.backgroundColor = UIColor.groupTableViewBackground
             }
         }
         // update user model vehicle emissions
         switch sender{
-        case motorcycleButton:
-            self.userModel?.CO2GramsPerMile = motorcycleCO2GramsPerMile
         case carButton:
             self.userModel?.CO2GramsPerMile = carCO2GramsPerMile
         case truckButton:
@@ -130,14 +123,15 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationMan
     
     @IBAction func setupVehicleMakeAndModel(_ sender: Any) {
         // deselect the transit buttons
-        motorcycleButton.isSelected = false
-        motorcycleButton.backgroundColor = UIColor.clear
         carButton.isSelected = false
-        carButton.backgroundColor = UIColor.clear
+//        carButton.backgroundColor = UIColor.clear
+        carButton.backgroundColor = UIColor.groupTableViewBackground
         truckButton.isSelected = false
-        truckButton.backgroundColor = UIColor.clear
+//        truckButton.backgroundColor = UIColor.clear
+        truckButton.backgroundColor = UIColor.groupTableViewBackground
         suvButton.isSelected = false
-        suvButton.backgroundColor = UIColor.clear
+//        suvButton.backgroundColor = UIColor.clear
+        suvButton.backgroundColor = UIColor.groupTableViewBackground
         self.getStarted.isHidden = false
         performSegue(withIdentifier: "vehicleSettings", sender: nil)
     }
@@ -154,7 +148,7 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationMan
             appDelegate.window?.makeKeyAndVisible()
             performSegue(withIdentifier: "baseView", sender: nil)
         }
-        else if (locationServicesDenied){
+        else{
             let title = "Location Services Not Enabled"
             let message = "Please allow NavSets to access your location.  This can be updated in the Settings app."
             let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
