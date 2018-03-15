@@ -51,7 +51,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     let activityIndicator = UIActivityIndicatorView(activityIndicatorStyle: .gray)
     let insets = UIEdgeInsets(top: 35, left: 25, bottom: 15, right: 25)
     var chargeThreshold = 500
-    var justChargedCard = false
+//    var justChargedCard = false
     var previousOverpaid = 0
     var paymentInProgress: Bool = false {
         didSet {
@@ -165,6 +165,13 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         self.totalCostProgress.clipsToBounds = true
         // make payment history button circular
         self.paymentHistoryButton.layer.cornerRadius = self.paymentHistoryButton.frame.size.width / 2;
+    
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // see if we need to charge the user's card
+        checkNeedToChargeCard()
     }
 
     override func didReceiveMemoryWarning() {
@@ -173,15 +180,24 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     }
     
     func updateCostProgress(animated: Bool){
-//        var currTotal = self.userModel?.cumulativeCost
-//        let maxTotal = chargeThreshold
-//        // if the user bought a route but didn't drive the whole thing and has a negative current total, add that amount to the max total so that rather than just showing nothing the progress bar will have a small amount until the user breaks 0
-////        if (currTotal! < 0){
-////            currTotal = 0
-////        }
-//        let currTotalFraction = Float(currTotal!) / Float(maxTotal)
         let currTotalFraction = Float((self.userModel?.cumulativeCost)!) / Float(chargeThreshold)
         self.totalCostProgress.setProgress(currTotalFraction, animated: animated)
+    }
+    
+    func chargeCard(){
+        self.paymentContext.paymentAmount = (self.userModel?.cumulativeCost)!
+        let title = "Time to save the world..."
+        let message = "Your cumulative offsets purchased exceed the $5.00 threshold and your card will be charged. Please approve the transaction before continuing to use NavSets."
+        let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        let action = UIAlertAction(title: "OK", style: .default, handler: {(action: UIAlertAction!) in self.paymentContext.requestPayment()})
+        alertController.addAction(action)
+        self.present(alertController, animated: true, completion: nil)
+    }
+    
+    func checkNeedToChargeCard(){
+        if ((self.userModel?.cumulativeCost)! >= chargeThreshold){
+            chargeCard()
+        }
     }
     
     // Calculate route to use for navigation
@@ -317,6 +333,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         viewController.delegate = self
         self.present(viewController, animated: true, completion: nil)
     }
+
     
     //MARK: UITextFieldDelegate
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
@@ -339,10 +356,6 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     }
     
     @objc func textFieldDidChange(_ textField: UITextField) {
-//        currentLocationButton.isHidden = true
-//        if textField.text == ""{
-//            currentLocationButton.isHidden = false
-//        }
         geocodingDataTask?.cancel()
         let options = ForwardGeocodeOptions(query: textField.text!)
         options.focalLocation = CLLocation(latitude: (mapView.userLocation?.coordinate.latitude)!, longitude: (mapView.userLocation?.coordinate.longitude)!)
@@ -370,14 +383,12 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     }
     
     func textFieldDidEndEditing(_ textField: UITextField) {
-        //        routeModel!.destinationName = textField.text
         if (textField == destinationField) {
             destinationGeocodeResultsTable.isHidden = true
         }
         else if (textField == originField) {
             originGeocodeResultsTable.isHidden = true
         }
-//        currentLocationButton.isHidden = true
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -500,15 +511,6 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         }
     }
     
-//    @IBAction func setToCurrentLocation(_ sender: UIButton) {
-//        if sender === currentLocationButton{
-//            // Update the route model and set the text in the search field
-//            self.routeModel!.startLocation = (mapView.userLocation?.coordinate)!
-//            self.originField.text = "Current Location"
-//            self.originField.endEditing(true)
-//        }
-//    }
-    
     @IBAction func back(_ sender: UIButton) {
         if sender === backButton{
             saveUser()
@@ -528,34 +530,13 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
                 self.userModel?.cumulativeCost += (self.routeModel?.routeCost)!
                 saveUser()
                 // justChargedCard will only be true right after a successful transaction
-                justChargedCard = false
+//                justChargedCard = false
                 updateCostProgress(animated: true)
-                if let sum = self.userModel?.cumulativeCost{
-                    if (sum > chargeThreshold){
-                        print (sum)
-                        print (chargeThreshold)
-                        // if user had previously overpaid for a route and has a higher threshold, subtract that off the amount that gets charged now
-                        self.paymentContext.paymentAmount = sum - previousOverpaid
-                        let title = "Before you go..."
-                        let message = "Purchasing this route will put your balance over the $5.00 threshold and your card will be charged."
-                        let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
-//                        var action = UIAlertAction(title: "OK", style: .default, handler: nil)
-//                        let action = UIAlertAction(title: "Select payment method", style: .default, handler: {(action: UIAlertAction!) in self.choosePaymentButtonTapped()})
-                        let action = UIAlertAction(title: "OK", style: .default, handler: {(action: UIAlertAction!) in self.paymentContext.requestPayment()})
-
-                        alertController.addAction(action)
-                        self.present(alertController, animated: true, completion: nil)
-//                        self.paymentInProgress = true
-//                        paymentContext.requestPayment()
-                    }
-                    else{
-                        if (selectedTransitButton == uberButton){
-                            self.launchUberButton.requestBehavior.requestRide(parameters: self.launchUberButton.rideParameters)
-                        }
-                        else {
-                            self.presentNavigation(along: self.directionsRoute!)
-                        }
-                    }
+                if (selectedTransitButton == uberButton){
+                    self.launchUberButton.requestBehavior.requestRide(parameters: self.launchUberButton.rideParameters)
+                }
+                else {
+                    self.presentNavigation(along: self.directionsRoute!)
                 }
             }
             else{
@@ -665,10 +646,11 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
             title = "Error"
             message = error?.localizedDescription ?? ""
             print ("payment failure")
+            checkNeedToChargeCard()
             // remove the route that wasn't actually purchased
-            self.userModel?.cumulativeCost -= (self.routeModel?.routeCost)!
-            saveUser()
-            updateCostProgress(animated: true)
+//            self.userModel?.cumulativeCost -= (self.routeModel?.routeCost)!
+//            saveUser()
+//            updateCostProgress(animated: true)
         case .success:
             title = "Success"
             message = "Offsets purchased"
@@ -679,13 +661,14 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
             chargeThreshold = 500
             previousOverpaid = 0
             print ("reset charge threshold and previous overpaid")
-            justChargedCard = true
+//            justChargedCard = true
             updateCostProgress(animated: true)
         case .userCancellation:
+            checkNeedToChargeCard()
             // remove the route that wasn't actually purchased
-            self.userModel?.cumulativeCost -= (self.routeModel?.routeCost)!
-            saveUser()
-            updateCostProgress(animated: true)
+//            self.userModel?.cumulativeCost -= (self.routeModel?.routeCost)!
+//            saveUser()
+//            updateCostProgress(animated: true)
             return
         }
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
@@ -731,25 +714,25 @@ extension SelectorViewController: NavigationViewControllerDelegate {
             if fractionTraveled < 0.9 {
                 let amountOverpaid = (1 - fractionTraveled) * Double((self.routeModel?.routeCost)!)
                 // if user was just charged but didn't drive the whole way, don't change the cumulative cost (keep it at 0) but instead change the charge threshold (until user hits that and needs to purchase again)
-                if (justChargedCard){
-                    previousOverpaid = Int(amountOverpaid)
-                    chargeThreshold += Int(amountOverpaid)
-                    print ("New charge threshold:g")
-                    print (chargeThreshold)
-                    // routeCost, cumulativeCost, and amountOverpaid are in cents so need to divide by 100
-                    let amountOverpaidString = String(format: "$%.2f", amountOverpaid / 100)
-                    // present an alert to tell the user how much they were actually charged for
-                    let title = "Thanks for using NavSets" // should change this
-                    let message = "We detected that you didn't drive the full route you purchased.  Your account has been credited with the difference of " + amountOverpaidString
-                    let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
-                    let action = UIAlertAction(title: "OK", style: .default, handler: nil)
-                    alertController.addAction(action)
-                    self.present(alertController, animated: true, completion: nil)
-                }
-                else{
+//                if (justChargedCard){
+//                    previousOverpaid = Int(amountOverpaid)
+//                    chargeThreshold += Int(amountOverpaid)
+//                    print ("New charge threshold:g")
+//                    print (chargeThreshold)
+//                    // routeCost, cumulativeCost, and amountOverpaid are in cents so need to divide by 100
+//                    let amountOverpaidString = String(format: "$%.2f", amountOverpaid / 100)
+//                    // present an alert to tell the user how much they were actually charged for
+//                    let title = "Thanks for using NavSets" // should change this
+//                    let message = "We detected that you didn't drive the full route you purchased.  Your account has been credited with the difference of " + amountOverpaidString
+//                    let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+//                    let action = UIAlertAction(title: "OK", style: .default, handler: nil)
+//                    alertController.addAction(action)
+//                    self.present(alertController, animated: true, completion: nil)
+//                }
+//                else{
                     self.userModel?.cumulativeCost -= Int(amountOverpaid)
                     saveUser()
-                }
+//                }
                 updateCostProgress(animated: true)
             }
         }
