@@ -16,6 +16,7 @@ struct PropertyKey{
     static let CO2GramsPerMile = "CO2GramsPerMile"
     static let stripeID = "stripeID"
     static let cumulativeCost = "cumulativeCost"
+    static let lastChargeAmount = "lastChargeAmount"
     static let totalOffsetHistory = "totalOffsetHistory"
 }
 
@@ -32,6 +33,7 @@ class UserModel: NSObject, NSCoding{
     var carYear: String?
     var stripeID: String?
     var cumulativeCost: Int
+    var lastChargeAmount: Int
     var totalOffsetHistory: Int
     
     var CO2GramsPerMile: Float?
@@ -45,24 +47,27 @@ class UserModel: NSObject, NSCoding{
         CO2GramsPerMile = nil
         stripeID = nil
         cumulativeCost = 0
+        lastChargeAmount = 0
         totalOffsetHistory = 0
     }
     
-    init?(carMake: String, carModel: String, carYear: String, cumulativeCost: Int, totalOffsetHistory: Int){
+    init?(carMake: String, carModel: String, carYear: String, cumulativeCost: Int, lastChargeAmount: Int, totalOffsetHistory: Int){
         self.carMake = carMake
         self.carModel = carModel
         self.carYear = carYear
         self.cumulativeCost = cumulativeCost
+        self.lastChargeAmount = lastChargeAmount
         self.totalOffsetHistory = totalOffsetHistory
     }
     
-    init?(carMake: String?, carModel: String?, carYear: String?, gramsPerMile: Float?, stripeID: String?, cumulativeCost: Int?, totalOffsetHistory: Int?){
+    init?(carMake: String?, carModel: String?, carYear: String?, gramsPerMile: Float?, stripeID: String?, cumulativeCost: Int?, lastChargeAmount: Int?, totalOffsetHistory: Int?){
         self.carMake = carMake
         self.carModel = carModel
         self.carYear = carYear
         self.CO2GramsPerMile = gramsPerMile
         self.stripeID = stripeID
         self.cumulativeCost = cumulativeCost ?? 0
+        self.lastChargeAmount = lastChargeAmount ?? 0
         self.totalOffsetHistory = totalOffsetHistory ?? 0
     }
     
@@ -91,6 +96,7 @@ class UserModel: NSObject, NSCoding{
         aCoder.encode(CO2GramsPerMile, forKey: PropertyKey.CO2GramsPerMile)
         aCoder.encode(stripeID, forKey: PropertyKey.stripeID)
         aCoder.encode(cumulativeCost, forKey: PropertyKey.cumulativeCost)
+        aCoder.encode(lastChargeAmount, forKey: PropertyKey.lastChargeAmount)
         aCoder.encode(totalOffsetHistory, forKey: PropertyKey.totalOffsetHistory)
     }
     
@@ -101,9 +107,10 @@ class UserModel: NSObject, NSCoding{
         let emissions = aDecoder.decodeObject(forKey: PropertyKey.CO2GramsPerMile) as? Float
         let stripeID = aDecoder.decodeObject(forKey: PropertyKey.stripeID) as? String
         let cumulativeCost = aDecoder.decodeObject(forKey: PropertyKey.cumulativeCost) as? Int
+        let lastChargeAmount = aDecoder.decodeObject(forKey: PropertyKey.lastChargeAmount) as? Int
         let totalOffsetHistory = aDecoder.decodeObject(forKey: PropertyKey.totalOffsetHistory) as? Int
         
-        self.init(carMake: carMake, carModel: carModel, carYear: carYear, gramsPerMile: emissions, stripeID: stripeID, cumulativeCost: cumulativeCost, totalOffsetHistory: totalOffsetHistory)
+        self.init(carMake: carMake, carModel: carModel, carYear: carYear, gramsPerMile: emissions, stripeID: stripeID, cumulativeCost: cumulativeCost, lastChargeAmount: lastChargeAmount,  totalOffsetHistory: totalOffsetHistory)
     }
     
 }

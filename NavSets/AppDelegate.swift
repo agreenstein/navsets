@@ -45,6 +45,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             print("First launch, setting UserDefault")
             initialViewController = storyboard.instantiateViewController(withIdentifier: "StartupViewController")
             UserDefaults.standard.set(false, forKey: "firstLaunch")
+            firstLaunch = false
         } else {
             // Don't update the initial view controller
             print("Not first launch")

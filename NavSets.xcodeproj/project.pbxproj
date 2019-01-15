@@ -87,6 +87,7 @@
 		43F8A11F1FD45D8300C4D460 /* VehicleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleData.swift; sourceTree = "<group>"; };
 		95C7312F1C2B0E1C39CE30EF /* Pods-NavSetsUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NavSetsUITests.release.xcconfig"; path = "Pods/Target Support Files/Pods-NavSetsUITests/Pods-NavSetsUITests.release.xcconfig"; sourceTree = "<group>"; };
 		9AEF6975A77E9CE9D604FD3F /* Pods_NavSetsTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_NavSetsTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E014FC42051ABFE0084B7A2 /* NavSets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NavSets.entitlements; sourceTree = "<group>"; };
 		9E30B3132042355E00869B1A /* StartupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartupViewController.swift; sourceTree = "<group>"; };
 		9E8ADB881FD70E2800D3FD61 /* NavSets-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NavSets-Bridging-Header.h"; sourceTree = "<group>"; };
 		9E91B1FF1FD7594300CCFCE3 /* vehicle_data.csv */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = vehicle_data.csv; sourceTree = "<group>"; };
@@ -151,6 +152,7 @@
 		4377BD441FCD05C800E4FFA5 /* NavSets */ = {
 			isa = PBXGroup;
 			children = (
+				9E014FC42051ABFE0084B7A2 /* NavSets.entitlements */,
 				4377BD451FCD05C800E4FFA5 /* AppDelegate.swift */,
 				9E8ADB881FD70E2800D3FD61 /* NavSets-Bridging-Header.h */,
 				4377BD471FCD05C800E4FFA5 /* BaseViewController.swift */,
@@ -291,6 +293,11 @@
 					4377BD411FCD05C800E4FFA5 = {
 						CreatedOnToolsVersion = 9.1;
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.ApplePay = {
+								enabled = 1;
+							};
+						};
 					};
 					4377BD551FCD05C800E4FFA5 = {
 						CreatedOnToolsVersion = 9.1;
@@ -745,6 +752,7 @@
 			baseConfigurationReference = 3436B1A70B7621FF4530CBEF /* Pods-NavSets.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = NavSets/NavSets.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 86UA5946F5;
@@ -769,6 +777,7 @@
 			baseConfigurationReference = B673BB8D546907B040525CD0 /* Pods-NavSets.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = NavSets/NavSets.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 86UA5946F5;

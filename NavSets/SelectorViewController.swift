@@ -35,6 +35,8 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     @IBOutlet weak var destinationGeocodeResultsTable: UITableView!
     @IBOutlet weak var paymentHistoryView: UIView!
     @IBOutlet weak var paymentHistoryButton: UIButton!
+    @IBOutlet weak var totalOffsetHistory: UILabel!
+    @IBOutlet weak var lastChargeInfo: UILabel!
     var mapView: MGLMapView!
     var geocoder: Geocoder!
     var geocodingDataTask: URLSessionDataTask?
@@ -50,9 +52,9 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     let customerContext: STPCustomerContext
     let activityIndicator = UIActivityIndicatorView(activityIndicatorStyle: .gray)
     let insets = UIEdgeInsets(top: 35, left: 25, bottom: 15, right: 25)
-    var chargeThreshold = 500
+    let chargeThreshold = 500
 //    var justChargedCard = false
-    var previousOverpaid = 0
+//    var previousOverpaid = 0
     var paymentInProgress: Bool = false {
         didSet {
             UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseIn, animations: {
@@ -149,7 +151,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         // initialize the payment history view (hide) and progress bar
 //        totalCostProgress.transform = CGAffineTransform(rotationAngle: .pi * -0.5)
         paymentHistoryView.isHidden = true
-        updateCostProgress(animated: true)
+        updateCostProgressAndHistory(animated: true)
         
         // add rounding to corners of buttons and tables
         self.startButton.layer.cornerRadius = 7
@@ -172,6 +174,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         super.viewDidAppear(animated)
         // see if we need to charge the user's card
         checkNeedToChargeCard()
+        updateCostProgressAndHistory(animated: true)
     }
 
     override func didReceiveMemoryWarning() {
@@ -179,9 +182,18 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
         // Dispose of any resources that can be recreated.
     }
     
-    func updateCostProgress(animated: Bool){
+    func updateCostProgressAndHistory(animated: Bool){
         let currTotalFraction = Float((self.userModel?.cumulativeCost)!) / Float(chargeThreshold)
         self.totalCostProgress.setProgress(currTotalFraction, animated: animated)
+        // uikit updates need to happen in main thread
+        DispatchQueue.main.async(){
+            self.totalOffsetHistory.text = String(format: "$%.2f", (self.userModel?.totalOffsetHistory)! / 100)
+            print ("Total offset history: " + String(format: "$%.2f", (self.userModel?.totalOffsetHistory)! / 100))
+            print ("Label: " + self.totalOffsetHistory.text!)
+            self.lastChargeInfo.text = String(format: "$%.2f", (self.userModel?.lastChargeAmount)! / 100)
+            print ("Last charge amount : " + String(format: "$%.2f", (self.userModel?.lastChargeAmount)! / 100))
+            print ("Label: " + self.lastChargeInfo.text!)
+        }
     }
     
     func chargeCard(){
@@ -531,7 +543,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
                 saveUser()
                 // justChargedCard will only be true right after a successful transaction
 //                justChargedCard = false
-                updateCostProgress(animated: true)
+                updateCostProgressAndHistory(animated: true)
                 if (selectedTransitButton == uberButton){
                     self.launchUberButton.requestBehavior.requestRide(parameters: self.launchUberButton.rideParameters)
                 }
@@ -655,14 +667,21 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
             title = "Success"
             message = "Offsets purchased"
             print ("payment success")
+            print ("Current cumulative cost is : " + String(format: "$%.2f", (self.userModel?.cumulativeCost)! / 100))
+            // update the last charge and total history
+            self.userModel?.totalOffsetHistory += (self.userModel?.cumulativeCost)!
+            self.userModel?.lastChargeAmount = (self.userModel?.cumulativeCost)!
+            // uikit updates need to happen in main thread
+//            DispatchQueue.main.async(){
+//                self.totalOffsetHistory.text = String(format: "$%.2f", (self.userModel?.totalOffsetHistory)! / 100)
+//                self.lastChargeInfo.text = String(format: "$%.2f", (self.userModel?.lastChargeAmount)! / 100)
+//            }
+            print ("Total offset history is now: " + String(format: "$%.2f", (self.userModel?.totalOffsetHistory)! / 100))
+            print ("Last charge amount is now: " + String(format: "$%.2f", (self.userModel?.lastChargeAmount)! / 100))
             // reset the cumulative cost, charge threshold, and previous overpaid
             self.userModel?.cumulativeCost = 0
             saveUser()
-            chargeThreshold = 500
-            previousOverpaid = 0
-            print ("reset charge threshold and previous overpaid")
-//            justChargedCard = true
-            updateCostProgress(animated: true)
+            updateCostProgressAndHistory(animated: true)
         case .userCancellation:
             checkNeedToChargeCard()
             // remove the route that wasn't actually purchased
@@ -672,13 +691,13 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
             return
         }
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        var action = UIAlertAction(title: "OK", style: .default, handler: nil)
-        if (selectedTransitButton == carButton && status == .success){
-            action = UIAlertAction(title: "Start Navigation", style: .default, handler: {(action: UIAlertAction!) in self.presentNavigation(along: self.directionsRoute!)})
-        }
-        else if (selectedTransitButton == uberButton && status == .success){
-            action = UIAlertAction(title: "Launch Uber", style: .default, handler: {(action: UIAlertAction!) in self.launchUberButton.requestBehavior.requestRide(parameters: self.launchUberButton.rideParameters)})
-        }
+        let action = UIAlertAction(title: "OK", style: .default, handler: nil)
+//        if (selectedTransitButton == carButton && status == .success){
+//            action = UIAlertAction(title: "Start Navigation", style: .default, handler: {(action: UIAlertAction!) in self.presentNavigation(along: self.directionsRoute!)})
+//        }
+//        else if (selectedTransitButton == uberButton && status == .success){
+//            action = UIAlertAction(title: "Launch Uber", style: .default, handler: {(action: UIAlertAction!) in self.launchUberButton.requestBehavior.requestRide(parameters: self.launchUberButton.rideParameters)})
+//        }
         alertController.addAction(action)
         self.present(alertController, animated: true, completion: nil)
     }
@@ -733,7 +752,7 @@ extension SelectorViewController: NavigationViewControllerDelegate {
                     self.userModel?.cumulativeCost -= Int(amountOverpaid)
                     saveUser()
 //                }
-                updateCostProgress(animated: true)
+                updateCostProgressAndHistory(animated: true)
             }
         }
     }
