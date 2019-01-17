@@ -1,41 +1,41 @@
 # MapboxGeocoder
 
-[📱&nbsp;![iOS Build Status](https://www.bitrise.io/app/6cae401ec4c1d406.svg?token=MJnXK0c2x2tmTnmHSPtcFA&branch=master)](https://www.bitrise.io/app/6cae401ec4c1d406) &nbsp;&nbsp;&nbsp;
-[🖥💻&nbsp;![macOS Build Status](https://www.bitrise.io/app/8413a6e577d6aa9a.svg?token=N1agv0mw75SOE_SykliueQ&branch=master)](https://www.bitrise.io/app/8413a6e577d6aa9a) &nbsp;&nbsp;&nbsp;
-[📺&nbsp;![tvOS Build Status](https://www.bitrise.io/app/0a8b56775b94f3e3.svg?token=UgLmHNS_ALJLjJN8ebd4hA&branch=master)](https://www.bitrise.io/app/0a8b56775b94f3e3) &nbsp;&nbsp;&nbsp;
-[⌚️&nbsp;![watchOS Build Status](https://www.bitrise.io/app/b2a0878fa4bddab4.svg?token=4wjvK6K92dNK2bOCuV9-Yg&branch=master)](https://www.bitrise.io/app/b2a0878fa4bddab4) &nbsp;&nbsp;&nbsp;
+[📱&nbsp;![iOS Build Status](https://app.bitrise.io/app/6cae401ec4c1d406/status.svg?token=MJnXK0c2x2tmTnmHSPtcFA&branch=master)](https://www.bitrise.io/app/6cae401ec4c1d406) &nbsp;&nbsp;&nbsp;
+[🖥💻&nbsp;![macOS Build Status](https://app.bitrise.io/app/8413a6e577d6aa9a/status.svg?token=N1agv0mw75SOE_SykliueQ&branch=master)](https://www.bitrise.io/app/8413a6e577d6aa9a) &nbsp;&nbsp;&nbsp;
+[📺&nbsp;![tvOS Build Status](https://app.bitrise.io/app/0a8b56775b94f3e3/status.svg?token=UgLmHNS_ALJLjJN8ebd4hA&branch=master)](https://www.bitrise.io/app/0a8b56775b94f3e3) &nbsp;&nbsp;&nbsp;
+[⌚️&nbsp;![watchOS Build Status](https://app.bitrise.io/app/b2a0878fa4bddab4/status.svg?token=4wjvK6K92dNK2bOCuV9-Yg&branch=master)](https://www.bitrise.io/app/b2a0878fa4bddab4) &nbsp;&nbsp;&nbsp;
 [![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage) &nbsp;&nbsp;&nbsp;
 [![CocoaPods](https://img.shields.io/cocoapods/v/MapboxGeocoder.swift.svg)](http://cocoadocs.org/docsets/MapboxGeocoder.swift/)
 
 MapboxGeocoder.swift makes it easy to connect your iOS, macOS, tvOS, or watchOS application to the [Mapbox Geocoding API](https://www.mapbox.com/geocoding/). MapboxGeocoder.swift exposes the power of the [Carmen](https://github.com/mapbox/carmen) geocoder through a simple API similar to Core Location’s CLGeocoder.
 
-MapboxGeocoder.swift pairs well with [MapboxDirections.swift](https://github.com/mapbox/MapboxDirections.swift), [MapboxStatic.swift](https://github.com/mapbox/MapboxStatic.swift), and the [Mapbox iOS SDK](https://www.mapbox.com/ios-sdk/) or [macOS SDK](https://github.com/mapbox/mapbox-gl-native/tree/master/platform/macos).
+MapboxGeocoder.swift pairs well with [MapboxDirections.swift](https://github.com/mapbox/MapboxDirections.swift), [MapboxStatic.swift](https://github.com/mapbox/MapboxStatic.swift), and the [Mapbox Maps SDK for iOS](https://www.mapbox.com/ios-sdk/) or the [Mapbox Maps SDK for macOS](https://github.com/mapbox/mapbox-gl-native/tree/master/platform/macos).
 
 ## Getting started
 
 Specify the following dependency in your [Carthage](https://github.com/Carthage/Carthage/) Cartfile:
 
 ```cartfile
-github "mapbox/MapboxGeocoder.swift" ~> 0.6
+github "mapbox/MapboxGeocoder.swift" ~> 0.10
 ```
 
 Or in your [CocoaPods](http://cocoapods.org/) Podfile:
 
 ```podspec
-pod 'MapboxGeocoder.swift', '~> 0.6'
+pod 'MapboxGeocoder.swift', '~> 0.10'
 ```
 
 Then `import MapboxGeocoder` or `@import MapboxGeocoder;`.
 
 For Objective-C targets, it may be necessary to enable the `ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES` build setting.
 
-v0.5.2 is the last release of MapboxGeocoder.swift written in Swift 2.3. The `swift2.3` branch corresponds to this release, plus any critical bug fixes that have been applied since. All subsequent releases will be based on the `master` branch, which is written in Swift 3. The Swift examples below are written in Swift 3; see the `swift2.3` branch’s readme for Swift 2.3 examples.
+v0.6.3 is the last release of MapboxGeocoder.swift written in Swift 3.2. The `swift3.2` branch corresponds to this release, plus any critical bug fixes that have been applied since. All subsequent releases will be based on the `master` branch, which is written in Swift 4. The Swift examples below are written in Swift 4; see the `swift3.2` branch’s readme for Swift 3.2 examples.
 
 This repository includes example applications written in both Swift and Objective-C showing use of the framework (as well as a comparison of writing apps in either language). More examples and detailed documentation are available in the [Mapbox API Documentation](https://www.mapbox.com/api-documentation/?language=Swift#geocoding).
 
 ## Usage
 
-You will need a [Mapbox access token](https://www.mapbox.com/developers/api/#access-tokens) in order to use the API. If you’re already using the [Mapbox iOS SDK](https://www.mapbox.com/ios-sdk/) or [macOS SDK](https://github.com/mapbox/mapbox-gl-native/tree/master/platform/macos), MapboxGeocoder.swift automatically recognizes your access token, as long as you’ve placed it in the `MGLMapboxAccessToken` key of your application’s Info.plist file.
+You will need a [Mapbox access token](https://www.mapbox.com/developers/api/#access-tokens) in order to use the API. If you’re already using the [Mapbox Maps SDK for iOS](https://www.mapbox.com/ios-sdk/) or [Mapbox Maps SDK for macOS](https://github.com/mapbox/mapbox-gl-native/tree/master/platform/macos), MapboxGeocoder.swift automatically recognizes your access token, as long as you’ve placed it in the `MGLMapboxAccessToken` key of your application’s Info.plist file.
 
 The examples below are each provided in Swift (denoted with `main.swift`) and Objective-C (`main.m`). For further details, see the [MapboxGeocoder.swift API reference](http://cocoadocs.org/docsets/MapboxGeocoder.swift/).
 
@@ -222,6 +222,30 @@ let task = geocoder.batchGeocode(options) { (placemarksByQuery, attributionsByQu
     let distance = LengthFormatter().string(fromMeters: min(distanceToSkyline, distanceToGoldStar))
     print("Found a chili parlor \(distance) away.")
 }
+```
+
+```objc
+// main.m
+MBForwardBatchGeocodeOptions *options = [[MBForwardBatchGeocodeOptions alloc] initWithQueries:@[@"skyline chili", @"gold star chili"]];
+options.focalLocation = locationManager.location;
+options.allowedScopes = MBPlacemarkScopePointOfInterest;
+
+NSURLSessionDataTask *task = [geocoder batchGeocodeWithOptions:options
+                                             completionHandler:^(NSArray<NSArray<MBGeocodedPlacemark *> *> * _Nullable placemarksByQuery,
+                                                                 NSArray<NSString *> * _Nullable attributionsByQuery,
+                                                                 NSError * _Nullable error) {
+    if (!placemarksByQuery) {
+        return;
+    }
+    
+    MBPlacemark *nearestSkyline = placemarksByQuery[0][0].location;
+    CLLocationDistance distanceToSkyline = [nearestSkyline distanceFromLocation:locationManager.location];
+    MBPlacemark *nearestGoldStar = placemarksByQuery[1][0].location;
+    CLLocationDistance distanceToGoldStar = [nearestGoldStar distanceFromLocation:locationManager.location];
+
+    NSString *distance = [NSLengthFormatter stringFromMeters:MIN(distanceToSkyline, distanceToGoldStar)];
+    NSLog(@"Found a chili parlor %@ away.", distance);
+}];
 ```
 
 Batch geocoding is available to Mapbox enterprise accounts. See the [Mapbox Geocoding](https://www.mapbox.com/geocoding/) website for more information.

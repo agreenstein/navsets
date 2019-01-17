@@ -1,12 +1,14 @@
 MapboxNavigation.xcworkspace
 
 .DS_Store
+.idea
 
 xcuserdata
 *.xccheckout
 *.moved-aside
 *.xcuserstate
 *.xcscmblueprint
+IDEWorkspaceChecks.plist
 
 Pods/
 
@@ -14,3 +16,6 @@ Carthage/Build
 Carthage/Checkouts
 /documentation
 /build
+
+
+Examples/Swift/Navigation_Example.mobileprovision

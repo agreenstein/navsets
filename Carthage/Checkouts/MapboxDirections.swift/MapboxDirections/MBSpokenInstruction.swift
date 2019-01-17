@@ -34,9 +34,12 @@ open class SpokenInstruction: NSObject, NSSecureCoding {
     @objc public let ssmlText: String
     
     /**
-     Initialize a `SpokenInstruction` from a dictionary.
+     Initializes a new spoken instruction object based on the given JSON dictionary representation.
+     
+     - parameter json: A JSON object that conforms to the [voice instruction](https://www.mapbox.com/api-documentation/#voice-instruction-object) format described in the Directions API documentation.
      */
-    @objc public convenience init(json: [String: Any]) {
+    @objc(initWithJSON:)
+    public convenience init(json: [String: Any]) {
         let distanceAlongStep = json["distanceAlongGeometry"] as! CLLocationDistance
         let text = json["announcement"] as! String
         let ssmlText = json["ssmlAnnouncement"] as! String
@@ -59,11 +62,11 @@ open class SpokenInstruction: NSObject, NSSecureCoding {
     
     public required init?(coder decoder: NSCoder) {
         distanceAlongStep = decoder.decodeDouble(forKey: "distanceAlongStep")
-        text = decoder.decodeObject(of: NSString.self, forKey: "text") as String!
-        ssmlText = decoder.decodeObject(of: NSString.self, forKey: "ssmlText") as String!
+        text = decoder.decodeObject(of: NSString.self, forKey: "text")! as String
+        ssmlText = decoder.decodeObject(of: NSString.self, forKey: "ssmlText")! as String
     }
     
-    open static var supportsSecureCoding = true
+    public static var supportsSecureCoding = true
     
     public func encode(with coder: NSCoder) {
         coder.encode(distanceAlongStep, forKey: "distanceAlongStep")

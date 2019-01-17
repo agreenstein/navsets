@@ -1,9 +1,9 @@
 {
-  "commitish" : "v0.0.4",
+  "commitish" : "v0.3.0",
   "iOS" : [
     {
       "name" : "Turf",
-      "hash" : "8de6f717a386f28ccce11ecfb18d28dba8f3bc4fdd9ce86095357f55712faf9a"
+      "hash" : "47dc678daf910b4527581dff774ff04abd706e65b271d955d942c1f391f2f7b0"
     }
   ]
 }

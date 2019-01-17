@@ -1,274 +1,338 @@
 import XCTest
-import FBSnapshotTestCase
 import MapboxDirections
 @testable import MapboxNavigation
 @testable import MapboxCoreNavigation
 
-extension CGSize {
-    static let iPhone5      : CGSize    = CGSize(width: 320, height: 568)
-    static let iPhone6Plus  : CGSize    = CGSize(width: 414, height: 736)
-    static let iPhoneX      : CGSize    = CGSize(width: 375, height: 812)
-}
 
-func instructionsView() -> InstructionsBannerView {
+func instructionsView(size: CGSize = .iPhone6Plus) -> InstructionsBannerView {
     let bannerHeight: CGFloat = 96
-    return InstructionsBannerView(frame: CGRect(origin: .zero, size: CGSize(width: CGSize.iPhone6Plus.width, height: bannerHeight)))
+    return InstructionsBannerView(frame: CGRect(origin: .zero, size: CGSize(width: size.width, height: bannerHeight)))
 }
 
-var shieldImage: UIImage {
-    get {
-        let bundle = Bundle(for: MapboxNavigationTests.self)
-        return UIImage(named: "i-280", in: bundle, compatibleWith: nil)!
+func makeVisualInstruction(_ maneuverType: ManeuverType = .arrive,
+                           _ maneuverDirection: ManeuverDirection = .left,
+                           primaryInstruction: [VisualInstructionComponent],
+                           secondaryInstruction: [VisualInstructionComponent]?) -> VisualInstructionBanner {
+    
+    let primary = VisualInstruction(text: "Instruction", maneuverType: maneuverType, maneuverDirection: maneuverDirection, components: primaryInstruction)
+    var secondary: VisualInstruction? = nil
+    if let secondaryInstruction = secondaryInstruction {
+        secondary = VisualInstruction(text: "Instruction", maneuverType: maneuverType, maneuverDirection: maneuverDirection, components: secondaryInstruction)
     }
-}
-
-func makeVisualInstruction(primaryInstruction: [VisualInstructionComponent], secondaryInstruction: [VisualInstructionComponent]?) -> VisualInstruction {
-    return VisualInstruction(distanceAlongStep: 482.803, primaryText: "Instruction", primaryTextComponents: primaryInstruction, secondaryText: "Instruction", secondaryTextComponents: secondaryInstruction, drivingSide: .right)
+    
+    return  VisualInstructionBanner(distanceAlongStep: 482.803, primaryInstruction: primary, secondaryInstruction: secondary, tertiaryInstruction: nil, drivingSide: .right)
 }
 
 class InstructionsBannerViewIntegrationTests: XCTestCase {
 
-    let shieldURL1 = URL(string: "https://s3.amazonaws.com/mapbox/shields/v3/us-41@3x.png")!
-    let shieldURL2 = URL(string: "https://s3.amazonaws.com/mapbox/shields/v3/i-94@3x.png")!
-
+    private lazy var reverseDelegate = TextReversingDelegate()
+    private lazy var silentDelegate = DefaultBehaviorDelegate()
+    
     lazy var imageRepository: ImageRepository = {
         let repo = ImageRepository.shared
         repo.sessionConfiguration = URLSessionConfiguration.default
         return repo
     }()
 
-    lazy var instructions = {
-        return [
-            VisualInstructionComponent(type: .destination, text: "US 41", imageURL: shieldURL1, maneuverType: .none, maneuverDirection: .none),
-            VisualInstructionComponent(type: .delimiter, text: "/", imageURL: nil, maneuverType: .none, maneuverDirection: .none),
-            VisualInstructionComponent(type: .destination, text: "I 94", imageURL: shieldURL2, maneuverType: .none, maneuverDirection: .none)
+    lazy var instructions: [VisualInstructionComponent] = {
+         let components =  [
+            VisualInstructionComponent(type: .image, text: "US 101", imageURL: ShieldImage.us101.url, abbreviation: nil, abbreviationPriority: 0),
+            VisualInstructionComponent(type: .delimiter, text: "/", imageURL: nil, abbreviation: nil, abbreviationPriority: 0),
+            VisualInstructionComponent(type: .image, text: "I 280", imageURL: ShieldImage.i280.url, abbreviation: nil, abbreviationPriority: 0)
         ]
+        return components
     }()
+    
+    lazy var genericInstructions: [VisualInstructionComponent] = [
+        VisualInstructionComponent(type: .image, text: "ANK 1", imageURL: nil, abbreviation: nil, abbreviationPriority: NSNotFound),
+        VisualInstructionComponent(type: .text, text: "Ankh-Morpork Highway 1", imageURL: nil, abbreviation: nil, abbreviationPriority: NSNotFound)
+    ]
+ 
+    lazy var typicalInstruction: VisualInstructionBanner = makeVisualInstruction(primaryInstruction: [VisualInstructionComponent(type: .text, text: "Main Street", imageURL: nil, abbreviation: "Main St", abbreviationPriority: 0)], secondaryInstruction: nil)
+    
+    private func resetImageCache() {
+        let semaphore = DispatchSemaphore(value: 0)
+        imageRepository.resetImageCache {
+            semaphore.signal()
+        }
+        let semaphoreResult = semaphore.wait(timeout: XCTestCase.NavigationTests.timeout)
+        XCTAssert(semaphoreResult == .success, "Semaphore timed out")
+    }
 
     override func setUp() {
         super.setUp()
+        continueAfterFailure = false
 
         imageRepository.disableDiskCache()
-        let clearImageCacheExpectation = self.expectation(description: "Clear Image Cache")
-        imageRepository.resetImageCache {
-            clearImageCacheExpectation.fulfill()
-        }
-        self.wait(for: [clearImageCacheExpectation], timeout: 1)
+        resetImageCache()
 
-        TestImageDownloadOperation.reset()
-        imageRepository.imageDownloader.setOperationType(TestImageDownloadOperation.self)
+        ImageDownloadOperationSpy.reset()
+        imageRepository.imageDownloader.setOperationType(ImageDownloadOperationSpy.self)
     }
 
     override func tearDown() {
-        super.tearDown()
-
         imageRepository.imageDownloader.setOperationType(nil)
+
+        super.tearDown()
     }
+    
+    func testCustomVisualInstructionDelegate() {
+        let view = instructionsView()
+        view.instructionDelegate = reverseDelegate
+        
+        view.update(for: typicalInstruction)
+        
+        XCTAssert(view.primaryLabel.attributedText?.string == "teertS niaM")
+        
+    }
+    
+    func testCustomDelegateReturningNilTriggersDefaultBehavior() {
+        let view = instructionsView()
+        view.instructionDelegate = silentDelegate
+        
+        view.update(for: typicalInstruction)
+        
+        XCTAssert(view.primaryLabel.attributedText?.string == "Main Street")
+        
+    }
+    
 
     func testDelimiterIsShownWhenShieldsNotLoaded() {
         let view = instructionsView()
 
-        view.set(makeVisualInstruction(primaryInstruction: instructions, secondaryInstruction: nil))
+        view.update(for: makeVisualInstruction(primaryInstruction: instructions, secondaryInstruction: nil))
 
         XCTAssertNotNil(view.primaryLabel.text!.index(of: "/"))
     }
 
     func testDelimiterIsHiddenWhenAllShieldsAreAlreadyLoaded() {
         //prime the cache to simulate images having already been loaded
-        let instruction1 = VisualInstructionComponent(type: .destination, text: nil, imageURL: shieldURL1, maneuverType: .none, maneuverDirection: .none)
-        let instruction2 = VisualInstructionComponent(type: .destination, text: nil, imageURL: shieldURL2, maneuverType: .none, maneuverDirection: .none)
+        let instruction1 = VisualInstructionComponent(type: .image, text: "I 280", imageURL: ShieldImage.i280.url, abbreviation: nil, abbreviationPriority: 0)
+        let instruction2 = VisualInstructionComponent(type: .image, text: "US 101", imageURL: ShieldImage.us101.url, abbreviation: nil, abbreviationPriority: 0)
 
-        imageRepository.storeImage(shieldImage, forKey: instruction1.shieldKey()!, toDisk: false)
-        imageRepository.storeImage(shieldImage, forKey: instruction2.shieldKey()!, toDisk: false)
+        imageRepository.storeImage(ShieldImage.i280.image, forKey: instruction1.cacheKey!, toDisk: false)
+        imageRepository.storeImage(ShieldImage.us101.image, forKey: instruction2.cacheKey!, toDisk: false)
 
         let view = instructionsView()
-        view.set(makeVisualInstruction(primaryInstruction: instructions, secondaryInstruction: nil))
+        view.update(for: makeVisualInstruction(primaryInstruction: instructions, secondaryInstruction: nil))
 
         //the delimiter should NOT be present since both shields are already in the cache
         XCTAssertNil(view.primaryLabel.text!.index(of: "/"))
 
         //explicitly reset the cache
-        let clearImageCacheExpectation = self.expectation(description: "Clear Image Cache")
-        imageRepository.resetImageCache {
-            clearImageCacheExpectation.fulfill()
-        }
-        self.wait(for: [clearImageCacheExpectation], timeout: 1)
+        resetImageCache()
     }
 
     func testDelimiterDisappearsOnlyWhenAllShieldsHaveLoaded() {
         let view = instructionsView()
-        view.set(makeVisualInstruction(primaryInstruction: instructions, secondaryInstruction: nil))
+        
+        let firstExpectation = XCTestExpectation(description: "First Component Callback")
+        let secondExpectation = XCTestExpectation(description: "Second Component Callback")
 
+        view.primaryLabel.imageDownloadCompletion = firstExpectation.fulfill
+        
+        view.secondaryLabel.imageDownloadCompletion = {
+            XCTFail("ImageDownloadCompletion should not have been called on the secondary label.")
+        }
+        
+        //set visual instructions on the view, which triggers the instruction image fetch
+        view.update(for: makeVisualInstruction(primaryInstruction: instructions, secondaryInstruction: nil))
+
+        //Slash should be present until an adjacent shield is downloaded
+        XCTAssertNotNil(view.primaryLabel.text!.index(of: "/"))
+
+        //simulate the downloads
         let firstDestinationComponent: VisualInstructionComponent = instructions[0]
         simulateDownloadingShieldForComponent(firstDestinationComponent)
 
-        //Slash should be present until all shields are downloaded
-        XCTAssertNotNil(view.primaryLabel.text!.index(of: "/"))
+        //ensure that first callback fires
+        wait(for: [firstExpectation], timeout: 1)
 
+        //change the callback to track the second shield component
+        view.primaryLabel.imageDownloadCompletion = secondExpectation.fulfill
+        
         let secondDestinationComponent = instructions[2]
         simulateDownloadingShieldForComponent(secondDestinationComponent)
 
+        //ensure that second callback fires
+        wait(for: [secondExpectation], timeout: 1)
+ 
         //Slash should no longer be present
         XCTAssertNil(view.primaryLabel.text!.index(of: "/"), "Expected instruction text not to contain a slash: \(view.primaryLabel.text!)")
     }
+    
+    func testGenericRouteShieldInstructionsArePresentedProperly() {
+        let view = instructionsView()
+        let instruction = makeVisualInstruction(primaryInstruction: genericInstructions, secondaryInstruction: nil)
+        //set the instruction, triggering the generic shield generation
+        view.update(for: instruction)
+        
+        guard let attributed = view.primaryLabel.attributedText else { return XCTFail("No attributed string") }
+        let stringRange = NSRange(location: 0, length: attributed.length)
+        let foundAttachment = XCTestExpectation(description: "Attachment found")
+        attributed.enumerateAttribute(.attachment, in: stringRange, options: []) { (value, range, stop) in
+            guard let attachment = value else { return }
+            foundAttachment.fulfill()
+            XCTAssert(range == NSRange(location: 0, length: 1), "Unexpected Range:" + String(describing: range))
+            XCTAssert(type(of: attachment) == GenericShieldAttachment.self, "Unexpected Attachment type:" + String(describing: attachment))
+        }
+        wait(for: [foundAttachment], timeout: 0)
+        
+    }
+    
+    func testRouteShieldsAreGenericUntilTheyLoad() {
+        let view = instructionsView()
+        
+        let firstExpectation = XCTestExpectation(description: "First Component Callback")
+        let secondExpectation = XCTestExpectation(description: "Second Component Callback")
+        let firstRunHasAttachments = XCTestExpectation(description: "First Run - Ensuring attachments exist")
+        let firstGeneric = XCTestExpectation(description: "First Run - First Instruction Generic")
+        let secondGeneric = XCTestExpectation(description: "First Run - Second Instruction Generic")
+        let secondRunHasAttachments = XCTestExpectation(description: "Second Run - Ensuring attachments exist")
+        let firstNowLoaded = XCTestExpectation(description: "Second Run - First Should now be loaded")
+        let secondStillGeneric = XCTestExpectation(description: "Second Run - Second should still be generic ")
+        let thirdRunHasAttachments = XCTestExpectation(description: "Third Run - Ensuring attachments exist")
+        let firstStillLoaded = XCTestExpectation(description: "Third Run - First should still be loaded")
+        let secondNowLoaded = XCTestExpectation(description: "Third Run - Second should now be loaded")
+        
+        view.primaryLabel.imageDownloadCompletion = firstExpectation.fulfill
+        
+        view.secondaryLabel.imageDownloadCompletion = {
+            XCTFail("ImageDownloadCompletion should not have been called on the secondary label.")
+        }
+        
+        //set visual instructions on the view, which triggers the instruction image fetch
+        view.update(for: makeVisualInstruction(primaryInstruction: instructions, secondaryInstruction: nil))
+        
+        let firstAttachmentRange = NSRange(location: 0, length: 1)
+        let secondAttachmentRange = NSRange(location: 4, length: 1)
+        
+        //instructions should contain generic shields
+        
+        let firstStringRange = NSRange(location: 0, length: view.primaryLabel.attributedText!.length)
+        view.primaryLabel.attributedText!.enumerateAttribute(.attachment,
+                                                             in: firstStringRange, options: [],
+                                                             using: { (value, range, stop) in
+            guard let attachment = value else { return }
+            firstRunHasAttachments.fulfill()
+            
+            if attachment is GenericShieldAttachment {
+                if range == firstAttachmentRange {
+                    return firstGeneric.fulfill()
+                } else if range == secondAttachmentRange {
+                    return secondGeneric.fulfill()
+                }
+            }
+            XCTFail("First run: Unexpected attachment encountered at:" + String(describing: range) + " value: " + String(describing: value))
+        })
+        
+        //simulate the downloads
+        let firstDestinationComponent: VisualInstructionComponent = instructions[0]
+        simulateDownloadingShieldForComponent(firstDestinationComponent)
+        
+        //ensure that first callback fires
+        wait(for: [firstExpectation], timeout: 1)
+        
+        //This range has to be recomputed because the string changes on download
+        let secondStringRange = NSRange(location: 0, length: view.primaryLabel.attributedText!.length)
+        
+        //check that the first component is now loaded
+        view.primaryLabel.attributedText!.enumerateAttribute(.attachment, in: secondStringRange,
+                                                             options: [], using: { (value, range, stop) in
+            guard let attachment = value else { return }
+            secondRunHasAttachments.fulfill()
+            
+            if attachment is GenericShieldAttachment, range == secondAttachmentRange {
+                return secondStillGeneric.fulfill()
+            } else if attachment is ShieldAttachment, range == firstAttachmentRange {
+                return firstNowLoaded.fulfill()
+            }
+            XCTFail("Second Run: Unexpected attachment encountered at:" + String(describing: range) + " value: " + String(describing: value))
+        })
+        
+        //change the callback to track the second shield component
+        view.primaryLabel.imageDownloadCompletion = secondExpectation.fulfill
+        
+        let secondDestinationComponent = instructions[2]
+        simulateDownloadingShieldForComponent(secondDestinationComponent)
+        
+        //ensure that second callback fires
+        wait(for: [secondExpectation], timeout: 1)
+        
+        //we recompute this again because the string once again changes
+        let thirdStringRange = NSRange(location: 0, length: view.primaryLabel.attributedText!.length)
+        let noDelimiterSecondAttachmentRange = NSRange(location: 2, length: 1)
+        
+        //check that all attachments are now loaded
+        view.primaryLabel.attributedText!.enumerateAttribute(.attachment, in: thirdStringRange, options: [], using: { (value, range, stop) in
+            guard let attachment = value else { return }
+            thirdRunHasAttachments.fulfill()
+            
+            if attachment is GenericShieldAttachment {
+                return XCTFail("No attachments should be generic at this point.")
+            } else if attachment is ShieldAttachment, [firstAttachmentRange, noDelimiterSecondAttachmentRange].contains(range) {
+                return range == firstAttachmentRange ? firstStillLoaded.fulfill() : secondNowLoaded.fulfill()
+            }
+            XCTFail("Third run: Unexpected attachment encountered at:" + String(describing: range) + " value: " + String(describing: value))
+        })
+        
+        //make sure everything happened as expected
+        let expectations = [firstRunHasAttachments, firstGeneric, secondGeneric,
+                            secondRunHasAttachments, firstNowLoaded, secondStillGeneric,
+                            thirdRunHasAttachments, firstStillLoaded, secondNowLoaded]
+        wait(for: expectations, timeout: 0)
+    }
+    
+    func testExitBannerIntegration() {
+        let exitAttribute = VisualInstructionComponent(type: .exit, text: "Exit", imageURL: nil,  abbreviation: nil, abbreviationPriority: 0)
+        let exitCodeAttribute = VisualInstructionComponent(type: .exitCode, text: "123A", imageURL: nil, abbreviation: nil, abbreviationPriority: 0)
+        let mainStreetString = VisualInstructionComponent(type: .text, text: "Main Street", imageURL: nil, abbreviation: "Main St", abbreviationPriority: 0)
+        let exitInstruction = VisualInstruction(text: nil, maneuverType: .takeOffRamp, maneuverDirection: .right, components: [exitAttribute, exitCodeAttribute, mainStreetString])
+        
+        let label = InstructionLabel(frame: CGRect(origin: .zero, size:CGSize(width: 375, height: 100)))
+        
+        label.availableBounds = { return label.frame }
+        
+        let presenter = InstructionPresenter(exitInstruction, dataSource: label, downloadCompletion: nil)
+        let attributed = presenter.attributedText()
+        
+        let key = [exitCodeAttribute.cacheKey!, ExitView.criticalHash(side: .right, dataSource: label)].joined(separator: "-")
+        XCTAssertNotNil(imageRepository.cachedImageForKey(key), "Expected cached image")
+        
+        let spaceRange = NSMakeRange(1, 1)
+        let space = attributed.attributedSubstring(from: spaceRange)
+        //Do we have spacing between the attachment and the road name?
+        XCTAssert(space.string == " ", "Should be a space between exit attachment and name")
+        
+        //Road Name should be present and not abbreviated
+        XCTAssert(attributed.length == 13, "Road name should not be abbreviated")
+        
+        let roadNameRange = NSMakeRange(2, 11)
+        let roadName = attributed.attributedSubstring(from: roadNameRange)
+        XCTAssert(roadName.string == "Main Street", "Banner not populating road name correctly")
+    }
 
     private func simulateDownloadingShieldForComponent(_ component: VisualInstructionComponent) {
-        let operation: TestImageDownloadOperation = TestImageDownloadOperation.operationForURL(component.imageURL!)!
-        operation.fireAllCompletions(shieldImage, data: UIImagePNGRepresentation(shieldImage), error: nil)
+        let operation: ImageDownloadOperationSpy = ImageDownloadOperationSpy.operationForURL(component.imageURL!)!
+        operation.fireAllCompletions(ShieldImage.i280.image, data: UIImagePNGRepresentation(ShieldImage.i280.image), error: nil)
 
-        XCTAssertNotNil(imageRepository.cachedImageForKey(component.shieldKey()!))
+        XCTAssertNotNil(imageRepository.cachedImageForKey(component.cacheKey!))
     }
 
 }
 
-class InstructionsBannerViewSnapshotTests: FBSnapshotTestCase {
-
-    let shieldURL = URL(string: "https://s3.amazonaws.com/mapbox/shields/v3/i-280@3x.png")!
-    let imageRepository: ImageRepository = ImageRepository.shared
-
-    override func setUp() {
-        super.setUp()
-        recordMode = false
-
-        let instruction = VisualInstructionComponent(type: .destination, text: nil, imageURL: shieldURL, maneuverType: .turn, maneuverDirection: .right)
-        let shieldKey = instruction.shieldKey()
-
-        imageRepository.storeImage(shieldImage, forKey: shieldKey!, toDisk: false)
-    }
-
-    override func tearDown() {
-        super.tearDown()
-
-        let clearImageCacheExpectation = self.expectation(description: "Clear Image Cache")
-        imageRepository.resetImageCache {
-            clearImageCacheExpectation.fulfill()
-        }
-        self.wait(for: [clearImageCacheExpectation], timeout: 1)
-    }
-
-    func testSinglelinePrimary() {
-        let view = instructionsView()
-        styleInstructionsView(view)
-
-        view.maneuverView.isStart = true
-        view.distance = 482
-
-        let instructions = [
-            VisualInstructionComponent(type: .destination, text: "US 45", imageURL: nil, maneuverType: .turn, maneuverDirection: .right),
-            VisualInstructionComponent(type: .destination, text: "/", imageURL: nil, maneuverType: .turn, maneuverDirection: .right),
-            VisualInstructionComponent(type: .destination, text: "Chicago", imageURL: nil, maneuverType: .turn, maneuverDirection: .right)
-        ]
-
-        view.set(makeVisualInstruction(primaryInstruction: instructions, secondaryInstruction: nil))
-
-        verifyView(view, size: view.bounds.size)
-    }
-
-    func testMultilinePrimary() {
-        let view = instructionsView()
-        styleInstructionsView(view)
-
-        view.maneuverView.isStart = true
-        view.distance = 482
-
-        let instructions = [
-            VisualInstructionComponent(type: .destination, text: "I 280", imageURL: shieldURL, maneuverType: .turn, maneuverDirection: .right),
-            VisualInstructionComponent(type: .destination, text: "US 45 / Chicago / US 45 / Chicago", imageURL: nil, maneuverType: .turn, maneuverDirection: .right)
-        ]
-
-        view.set(makeVisualInstruction(primaryInstruction: instructions, secondaryInstruction: nil))
-
-        verifyView(view, size: view.bounds.size)
-    }
-
-    func testSinglelinePrimaryAndSecondary() {
-        let view = instructionsView()
-        styleInstructionsView(view)
-
-        view.maneuverView.isStart = true
-        view.distance = 482
-
-        let primary = [
-            VisualInstructionComponent(type: .destination, text: "I 280", imageURL: shieldURL, maneuverType: .turn, maneuverDirection: .right),
-            VisualInstructionComponent(type: .destination, text: "South", imageURL: nil, maneuverType: .turn, maneuverDirection: .right)
-        ]
-        let secondary = [VisualInstructionComponent(type: .destination, text: "US 45 / Chicago", imageURL: nil, maneuverType: .turn, maneuverDirection: .right)]
-
-        view.set(makeVisualInstruction(primaryInstruction: primary, secondaryInstruction: secondary))
-
-        verifyView(view, size: view.bounds.size)
-    }
-
-    func testPrimaryShieldAndSecondary() {
-        let view = instructionsView()
-        styleInstructionsView(view)
-
-        view.maneuverView.isStart = true
-        view.distance = 482
-
-        let primary = [
-            VisualInstructionComponent(type: .destination, text: "I 280", imageURL: shieldURL, maneuverType: .turn, maneuverDirection: .right)
-        ]
-        let secondary = [VisualInstructionComponent(type: .destination, text: "Mountain View Test", imageURL: nil, maneuverType: .turn, maneuverDirection: .right)]
-
-        view.set(makeVisualInstruction(primaryInstruction: primary, secondaryInstruction: secondary))
-
-        verifyView(view, size: view.bounds.size)
-    }
-
-    func testInstructionsAndNextInstructions() {
-        let view = UIView()
-        view.backgroundColor = .white
-        let instructionsBannerView = instructionsView()
-        let nextBannerViewFrame = CGRect(x: 0, y: instructionsBannerView.frame.maxY, width: instructionsBannerView.bounds.width, height: 44)
-        let nextBannerView = NextBannerView(frame: nextBannerViewFrame)
-        nextBannerView.translatesAutoresizingMaskIntoConstraints = true
-        view.addSubview(instructionsBannerView)
-        view.addSubview(nextBannerView)
-        view.frame = CGRect(origin: .zero, size: CGSize(width: nextBannerViewFrame.width, height: nextBannerViewFrame.maxY))
-
-        instructionsBannerView.maneuverView.isStart = true
-        instructionsBannerView.distance = 482
-
-        let primary = [
-            VisualInstructionComponent(type: .destination, text: "I 280", imageURL: shieldURL, maneuverType: .turn, maneuverDirection: .right)
-        ]
-        let secondary = [VisualInstructionComponent(type: .destination, text: "US 45 / Chicago", imageURL: nil, maneuverType: .turn, maneuverDirection: .right)]
-
-        instructionsBannerView.set(makeVisualInstruction(primaryInstruction: primary, secondaryInstruction: secondary))
-
-        let primaryThen = [
-            VisualInstructionComponent(type: .destination, text: "I 280", imageURL: shieldURL, maneuverType: .turn, maneuverDirection: .right)
-        ]
-
-        nextBannerView.instructionLabel.instruction = primaryThen
-        nextBannerView.maneuverView.backgroundColor = .clear
-        nextBannerView.maneuverView.isEnd = true
-
-        verifyView(view, size: view.bounds.size)
+private class TextReversingDelegate: VisualInstructionDelegate {
+    func label(_ label: InstructionLabel, willPresent instruction: VisualInstruction, as presented: NSAttributedString) -> NSAttributedString? {
+        let forwards = Array(presented.string)
+        let reverse = String(forwards.reversed())
+        var range = NSRange(location: 0, length: presented.string.count)
+        let attributes = presented.attributes(at: 0, effectiveRange: &range)
+        return NSAttributedString(string: reverse, attributes: attributes)
     }
 }
 
-extension InstructionsBannerViewSnapshotTests {
-
-    func verifyView(_ view: UIView, size: CGSize) {
-        view.frame.size = size
-        FBSnapshotVerifyView(view)
-    }
-
-    // UIAppearance proxy do not work in unit test environment so we have to style manually
-    func styleInstructionsView(_ view: InstructionsBannerView) {
-        view.backgroundColor = .white
-        view.maneuverView.backgroundColor = #colorLiteral(red: 0.5882352941, green: 0.5882352941, blue: 0.5882352941, alpha: 0.5)
-        view.distanceLabel.backgroundColor = #colorLiteral(red: 0.8039215803, green: 0.8039215803, blue: 0.8039215803, alpha: 0.5)
-        view.primaryLabel.backgroundColor = #colorLiteral(red: 0.5882352941, green: 0.5882352941, blue: 0.5882352941, alpha: 0.5)
-        view.secondaryLabel.backgroundColor = #colorLiteral(red: 0.8039215803, green: 0.8039215803, blue: 0.8039215803, alpha: 0.5)
-        view.dividerView.backgroundColor = .red
-        view._separatorView.backgroundColor = .red
-
-        view.distanceLabel.valueFont = UIFont.systemFont(ofSize: 24)
-        view.distanceLabel.unitFont = UIFont.systemFont(ofSize: 14)
-        view.primaryLabel.font = UIFont.systemFont(ofSize: 30, weight: .medium)
-        view.secondaryLabel.font = UIFont.systemFont(ofSize: 26, weight: .medium)
+private class DefaultBehaviorDelegate: VisualInstructionDelegate {
+    func label(_ label: InstructionLabel, willPresent instruction: VisualInstruction, as presented: NSAttributedString) -> NSAttributedString? {
+        return nil
     }
 }

@@ -3,18 +3,9 @@
 #import "MMETypes.h"
 #import <CoreLocation/CoreLocation.h>
 
-
-@class MMELocationManager;
-
 NS_ASSUME_NONNULL_BEGIN
 
 @protocol MMEEventsManagerDelegate;
-
-@protocol MMEEventsManagerDelegate <NSObject>
-
-- (void)locationManager:(MMELocationManager *)locationManager didUpdateLocations:(NSArray<CLLocation *> *)locations;
-
-@end
 
 @interface MMEEventsManager : NSObject
 
@@ -38,11 +29,20 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)sendTurnstileEvent;
 - (void)enqueueEventWithName:(NSString *)name;
 - (void)enqueueEventWithName:(NSString *)name attributes:(MMEMapboxEventAttributes *)attributes;
+- (void)postMetadata:(NSArray *)metadata filePaths:(NSArray *)filePaths completionHandler:(nullable void (^)(NSError * _Nullable error))completionHandler;
 - (void)disableLocationMetrics;
 
 - (void)displayLogFileFromDate:(NSDate *)logDate;
 
 @end
 
+@protocol MMEEventsManagerDelegate <NSObject>
+
+@optional
+
+- (void)eventsManager:(MMEEventsManager *)eventsManager didUpdateLocations:(NSArray<CLLocation *> *)locations;
+- (void)eventsManager:(MMEEventsManager *)eventsManager didVisit:(CLVisit *)visit;
+
+@end
 
 NS_ASSUME_NONNULL_END

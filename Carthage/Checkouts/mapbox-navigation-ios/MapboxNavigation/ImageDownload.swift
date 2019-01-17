@@ -9,6 +9,7 @@ enum DownloadError: Error {
 protocol ImageDownload: URLSessionDataDelegate {
     init(request: URLRequest, in session: URLSession)
     func addCompletion(_ completion: @escaping ImageDownloadCompletionBlock)
+    var isFinished: Bool { get }
 }
 
 class ImageDownloadOperation: Operation, ImageDownload {
@@ -56,7 +57,7 @@ class ImageDownloadOperation: Operation, ImageDownload {
     }
 
     func addCompletion(_ completion: @escaping ImageDownloadCompletionBlock) {
-        barrierQueue.async {
+        barrierQueue.async(flags: .barrier) {
             self.completionBlocks.append(completion)
         }
     }
@@ -95,7 +96,6 @@ class ImageDownloadOperation: Operation, ImageDownload {
 
         if isCancelled == true {
             _finished = true
-            // reset?
             return
         }
 
@@ -120,7 +120,6 @@ class ImageDownloadOperation: Operation, ImageDownload {
             self.incomingData = Data()
             completionHandler(.allow)
         } else {
-            //TODO: test sad path handling
             fireAllCompletions(nil, data: nil, error: DownloadError.serverError)
             completionHandler(.cancel)
         }
@@ -136,16 +135,13 @@ class ImageDownloadOperation: Operation, ImageDownload {
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         guard error == nil else {
-            NSLog("================> %@", String(describing: error))
-            //TODO: test client-side error
             fireAllCompletions(nil, data: nil, error: DownloadError.clientError)
             return
         }
 
-        if let data = incomingData, let image = UIImage.init(data: data, scale: UIScreen.main.scale) {
+        if let data = incomingData, let image = UIImage(data: data, scale: UIScreen.main.scale) {
             fireAllCompletions(image, data: data, error: nil)
         } else {
-            // TODO: test no image data returned
             fireAllCompletions(nil, data: incomingData, error: DownloadError.noImageData)
         }
         _finished = true
@@ -158,11 +154,7 @@ class ImageDownloadOperation: Operation, ImageDownload {
 
     private func fireAllCompletions(_ image: UIImage?, data: Data?, error: Error?) {
         barrierQueue.sync {
-            for completion in completionBlocks {
-                DispatchQueue.main.async {
-                    completion(image, data, error)
-                }
-            }
+            completionBlocks.forEach { $0(image, data, error) }
         }
     }
 }

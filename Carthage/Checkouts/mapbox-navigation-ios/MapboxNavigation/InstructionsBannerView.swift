@@ -2,8 +2,30 @@ import UIKit
 import MapboxCoreNavigation
 import MapboxDirections
 
-protocol InstructionsBannerViewDelegate: class {
-    func didTapInstructionsBanner(_ sender: BaseInstructionsBannerView)
+/**
+ `InstructionsBannerViewDelegate` provides methods for reacting to user interactions in `InstructionsBannerView`.
+ */
+@objc(MBInstructionsBannerViewDelegate)
+public protocol InstructionsBannerViewDelegate: class {
+    
+    /**
+     Called when the user taps the `InstructionsBannerView`.
+     */
+    @objc(didTapInstructionsBanner:)
+    optional func didTapInstructionsBanner(_ sender: BaseInstructionsBannerView)
+    
+    
+    /**
+     Called when the user drags either up or down on the `InstructionsBannerView`.
+     */
+    @available(*, deprecated, message: "Please use didSwipeInstructionsBanner instead.")
+    @objc(didDragInstructionsBanner:)
+    optional func didDragInstructionsBanner(_ sender: BaseInstructionsBannerView)
+    
+    /**
+     Called when the user swipes either left, right, or down on the `InstructionsBannerView`
+     */
+    @objc optional func didSwipeInstructionsBanner(_ sender: BaseInstructionsBannerView, swipeDirection direction: UISwipeGestureRecognizerDirection)
 }
 
 /// :nodoc:
@@ -14,43 +36,58 @@ open class InstructionsBannerView: BaseInstructionsBannerView { }
 /// :nodoc:
 open class BaseInstructionsBannerView: UIControl {
     
-    weak var maneuverView: ManeuverView!
-    weak var primaryLabel: PrimaryLabel!
-    weak var secondaryLabel: SecondaryLabel!
-    weak var distanceLabel: DistanceLabel!
-    weak var dividerView: UIView!
+    public weak var maneuverView: ManeuverView!
+    public weak var primaryLabel: PrimaryLabel!
+    public weak var secondaryLabel: SecondaryLabel!
+    public weak var distanceLabel: DistanceLabel!
+    public weak var dividerView: UIView!
     weak var _separatorView: UIView!
-    weak var separatorView: SeparatorView!
-    weak var delegate: InstructionsBannerViewDelegate?
+    public weak var separatorView: SeparatorView!
+    public weak var stepListIndicatorView: StepListIndicatorView!
+    
+    @IBInspectable
+    public var swipeable: Bool = false
+    
+    @IBInspectable
+    public var showStepIndicator: Bool = true {
+        didSet {
+            stepListIndicatorView.isHidden = !showStepIndicator
+        }
+    }
+    
+    public weak var delegate: InstructionsBannerViewDelegate? {
+        didSet {
+            if showStepIndicator {
+               stepListIndicatorView.isHidden = false
+            }
+        }
+    }
+    
+    weak var instructionDelegate: VisualInstructionDelegate? {
+        didSet {
+            primaryLabel.instructionDelegate = instructionDelegate
+            secondaryLabel.instructionDelegate = instructionDelegate
+        }
+    }
     
     var centerYConstraints = [NSLayoutConstraint]()
     var baselineConstraints = [NSLayoutConstraint]()
     
-    fileprivate let distanceFormatter = DistanceFormatter(approximate: true)
+    let distanceFormatter = DistanceFormatter(approximate: true)
     
-    var distance: CLLocationDistance? {
+    public var distance: CLLocationDistance? {
         didSet {
-            distanceLabel.unitRange = nil
-            distanceLabel.valueRange = nil
-            distanceLabel.distanceString = nil
+            distanceLabel.attributedDistanceString = nil
             
             if let distance = distance {
-                let distanceString = distanceFormatter.string(from: distance)
-                let distanceUnit = distanceFormatter.unitString(fromValue: distance, unit: distanceFormatter.unit)
-                guard let unitRange = distanceString.range(of: distanceUnit) else { return }
-                let distanceValue = distanceString.replacingOccurrences(of: distanceUnit, with: "")
-                guard let valueRange = distanceString.range(of: distanceValue) else { return }
-
-                distanceLabel.unitRange = unitRange
-                distanceLabel.valueRange = valueRange
-                distanceLabel.distanceString = distanceString
+                distanceLabel.attributedDistanceString = distanceFormatter.attributedString(for: distance)
             } else {
                 distanceLabel.text = nil
             }
         }
     }
     
-    override init(frame: CGRect) {
+    public override init(frame: CGRect) {
         super.init(frame: frame)
         commonInit()
     }
@@ -65,14 +102,61 @@ open class BaseInstructionsBannerView: UIControl {
         setupLayout()
         centerYAlignInstructions()
         setupAvailableBounds()
+        stepListIndicatorView.isHidden = !showStepIndicator
     }
     
-    @IBAction func tappedInstructionsBanner(_ sender: Any) {
-        delegate?.didTapInstructionsBanner(self)
+    @objc func swipedInstructionBannerLeft(_ sender: Any) {
+        if !swipeable {
+            return
+        }
+
+        if let gestureRecognizer = sender as? UISwipeGestureRecognizer, gestureRecognizer.state == .ended {
+            if let delegate = delegate {
+                delegate.didSwipeInstructionsBanner?(self, swipeDirection: .left)
+            }
+        }
     }
     
-    func set(_ instruction: VisualInstruction?) {
-        let secondaryInstruction = instruction?.secondaryTextComponents
+    @objc func swipedInstructionBannerRight(_ sender: Any) {
+        if !swipeable {
+            return
+        }
+        
+        if let gestureRecognizer = sender as? UISwipeGestureRecognizer, gestureRecognizer.state == .ended {
+            if let delegate = delegate {
+                delegate.didSwipeInstructionsBanner?(self, swipeDirection: .right)
+            }
+        }
+    }
+    
+    @objc func swipedInstructionBannerDown(_ sender: Any) {
+        if let gestureRecognizer = sender as? UISwipeGestureRecognizer, gestureRecognizer.state == .ended {
+            if showStepIndicator {
+               stepListIndicatorView.isHidden = !stepListIndicatorView.isHidden
+            }
+            
+            if let delegate = delegate {
+                delegate.didSwipeInstructionsBanner?(self, swipeDirection: .down)
+                delegate.didDragInstructionsBanner?(self)
+            }
+        }
+    }
+        
+    @objc func tappedInstructionsBanner(_ sender: Any) {
+        if let delegate = delegate {
+            if showStepIndicator {
+                stepListIndicatorView.isHidden = !stepListIndicatorView.isHidden
+            }
+            delegate.didTapInstructionsBanner?(self)
+        }
+    }
+    
+    /**
+     Updates the instructions banner info with a given `VisualInstructionBanner`.
+     */
+    @objc(updateForVisualInstructionBanner:)
+    public func update(for instruction: VisualInstructionBanner?) {
+        let secondaryInstruction = instruction?.secondaryInstruction
         primaryLabel.numberOfLines = secondaryInstruction == nil ? 2 : 1
         
         if secondaryInstruction == nil {
@@ -81,39 +165,27 @@ open class BaseInstructionsBannerView: UIControl {
             baselineAlignInstructions()
         }
         
-        primaryLabel.instruction = instruction?.primaryTextComponents
+        primaryLabel.instruction = instruction?.primaryInstruction
+        maneuverView.visualInstruction = instruction?.primaryInstruction
+        maneuverView.drivingSide = instruction?.drivingSide ?? .right
         secondaryLabel.instruction = secondaryInstruction
-        maneuverView.visualInstruction = instruction
     }
     
     override open func prepareForInterfaceBuilder() {
         super.prepareForInterfaceBuilder()
         maneuverView.isStart = true
-        
-        primaryLabel.instruction = [VisualInstructionComponent(type: .destination, text: "Primary text label", imageURL: nil, maneuverType: .none, maneuverDirection: .none)]
+        let component = VisualInstructionComponent(type: .text, text: "Primary text label", imageURL: nil, abbreviation: nil, abbreviationPriority: NSNotFound)
+        let instruction = VisualInstruction(text: nil, maneuverType: .none, maneuverDirection: .none, components: [component])
+        primaryLabel.instruction = instruction
         
         distance = 100
     }
     
     /**
-     Updates the instructions banner for a given `RouteProgress`.
+     Updates the instructions banner distance info for a given `RouteStepProgress`.
      */
-    public func update(for currentLegProgress: RouteLegProgress) {
-        let stepProgress = currentLegProgress.currentStepProgress
-        let distanceRemaining = stepProgress.distanceRemaining
-        
-        guard let visualInstructions = stepProgress.remainingVisualInstructions else { return }
-        
-        for visualInstruction in visualInstructions {
-            if stepProgress.distanceRemaining <= visualInstruction.distanceAlongStep {
-                
-                set(visualInstruction)
-                
-                stepProgress.visualInstructionIndex += 1
-                break
-            }
-        }
-        
+    public func updateDistance(for currentStepProgress: RouteStepProgress) {
+        let distanceRemaining = currentStepProgress.distanceRemaining
         distance = distanceRemaining > 5 ? distanceRemaining : 0
     }
 }

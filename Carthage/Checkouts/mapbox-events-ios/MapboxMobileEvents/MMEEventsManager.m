@@ -7,14 +7,16 @@
 #import "MMEAPIClient.h"
 #import "MMEEventLogger.h"
 #import "MMEEventsConfiguration.h"
+#import "MMEConfigurator.h"
 #import "MMETimerManager.h"
+#import "MMEDispatchManager.h"
 #import "MMEUIApplicationWrapper.h"
 #import "MMENSDateWrapper.h"
 #import "MMECategoryLoader.h"
 #import "CLLocation+MMEMobileEvents.h"
 #import <CoreLocation/CoreLocation.h>
 
-@interface MMEEventsManager () <MMELocationManagerDelegate>
+@interface MMEEventsManager () <MMELocationManagerDelegate, MMEConfiguratorDelegate>
 
 @property (nonatomic) id<MMELocationManager> locationManager;
 @property (nonatomic) id<MMEAPIClient> apiClient;
@@ -23,7 +25,9 @@
 @property (nonatomic) MMECommonEventData *commonEventData;
 @property (nonatomic) NSDate *nextTurnstileSendDate;
 @property (nonatomic) MMEEventsConfiguration *configuration;
+@property (nonatomic) MMEConfigurator *configurationUpdater;
 @property (nonatomic) MMETimerManager *timerManager;
+@property (nonatomic) MMEDispatchManager *dispatchManager;
 @property (nonatomic, getter=isPaused) BOOL paused;
 @property (nonatomic) id<MMEUIApplicationWrapper> application;
 @property (nonatomic) MMENSDateWrapper *dateWrapper;
@@ -37,12 +41,12 @@
 + (instancetype)sharedManager {
     static MMEEventsManager *_sharedManager;
     static dispatch_once_t onceToken;
-
+    
     dispatch_once(&onceToken, ^{
         [MMECategoryLoader loadCategories];
         _sharedManager = [[MMEEventsManager alloc] init];
     });
-
+    
     return _sharedManager;
 }
 
@@ -51,13 +55,16 @@
     if (self) {
         _metricsEnabled = YES;
         _locationMetricsEnabled = YES;
+        _paused = YES;
         _accountType = 0;
         _eventQueue = [NSMutableArray array];
         _commonEventData = [[MMECommonEventData alloc] init];
-        _configuration = [MMEEventsConfiguration defaultEventsConfiguration];
+        _configuration = [MMEEventsConfiguration configuration];
+        _configurationUpdater = [[MMEConfigurator alloc] initWithTimeInterval:_configuration.configurationRotationTimeInterval];
         _uniqueIdentifer = [[MMEUniqueIdentifier alloc] initWithTimeInterval:_configuration.instanceIdentifierRotationTimeInterval];
         _application = [[MMEUIApplicationWrapper alloc] init];
         _dateWrapper = [[MMENSDateWrapper alloc] init];
+        _dispatchManager = [[MMEDispatchManager alloc] init];
     }
     return self;
 }
@@ -69,26 +76,33 @@
 
 - (void)initializeWithAccessToken:(NSString *)accessToken userAgentBase:(NSString *)userAgentBase hostSDKVersion:(NSString *)hostSDKVersion {
     self.apiClient = [[MMEAPIClient alloc] initWithAccessToken:accessToken userAgentBase:userAgentBase hostSDKVersion:hostSDKVersion];
+    self.configurationUpdater.delegate = self;
     
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(pauseOrResumeMetricsCollectionIfRequired) name:UIApplicationDidEnterBackgroundNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(pauseOrResumeMetricsCollectionIfRequired) name:UIApplicationDidBecomeActiveNotification object:nil];
+    __weak __typeof__(self) weakSelf = self;
+    void(^initialization)(void) = ^{
+        __strong __typeof__(weakSelf) strongSelf = weakSelf;
+        if (strongSelf == nil) {
+            return;
+        }
+
+        [[NSNotificationCenter defaultCenter] addObserver:strongSelf selector:@selector(pauseOrResumeMetricsCollectionIfRequired) name:UIApplicationDidEnterBackgroundNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:strongSelf selector:@selector(pauseOrResumeMetricsCollectionIfRequired) name:UIApplicationDidBecomeActiveNotification object:nil];
     
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunguarded-availability"
-    if (&NSProcessInfoPowerStateDidChangeNotification != NULL) {
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(pauseOrResumeMetricsCollectionIfRequired) name:NSProcessInfoPowerStateDidChangeNotification object:nil];
-    }
-#pragma clang diagnostic pop
+        if (@available(iOS 9.0, *)) {
+            [[NSNotificationCenter defaultCenter] addObserver:strongSelf selector:@selector(powerStateDidChange:) name:NSProcessInfoPowerStateDidChangeNotification object:nil];
+        }
     
+        strongSelf.paused = YES;
     
-    self.paused = YES;
+        strongSelf.locationManager = [[MMELocationManager alloc] init];
+        strongSelf.locationManager.delegate = strongSelf;
+        strongSelf.locationManager.metricsEnabledForInUsePermissions = strongSelf.metricsEnabledForInUsePermissions;
+        [strongSelf resumeMetricsCollection];
     
-    self.locationManager = [[MMELocationManager alloc] init];
-    self.locationManager.delegate = self;
-    self.locationManager.metricsEnabledForInUsePermissions = self.metricsEnabledForInUsePermissions;
-    [self resumeMetricsCollection];
+        strongSelf.timerManager = [[MMETimerManager alloc] initWithTimeInterval:strongSelf.configuration.eventFlushSecondsThreshold target:strongSelf selector:@selector(flush)];
+    };
     
-    self.timerManager = [[MMETimerManager alloc] initWithTimeInterval:self.configuration.eventFlushSecondsThreshold target:self selector:@selector(flush)];
+    [self.dispatchManager scheduleBlock:initialization afterDelay:self.configuration.initializationDelay];
 }
 
 # pragma mark - Public API
@@ -127,18 +141,31 @@
     [self.locationManager stopUpdatingLocation];
 }
 
+- (void)powerStateDidChange:(NSNotification *)notification {
+    // From https://github.com/mapbox/mapbox-events-ios/issues/44 it looks like
+    // `NSProcessInfoPowerStateDidChangeNotification` can be sent from a thread other than the main
+    // thread.
+    
+    __weak __typeof__(self) weakSelf = self;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [weakSelf pauseOrResumeMetricsCollectionIfRequired];
+    });
+}
+
 - (void)pauseOrResumeMetricsCollectionIfRequired {
     // Prevent blue status bar when host app has `when in use` permission only and it is not in foreground
     if ([CLLocationManager authorizationStatus] == kCLAuthorizationStatusAuthorizedWhenInUse &&
         self.application.applicationState == UIApplicationStateBackground &&
         !self.isMetricsEnabledForInUsePermissions) {
         if (_backgroundTaskIdentifier == UIBackgroundTaskInvalid) {
+            __weak __typeof__(self) weakSelf = self;
             _backgroundTaskIdentifier = [self.application beginBackgroundTaskWithExpirationHandler:^{
+                __strong __typeof__(weakSelf) strongSelf = weakSelf;
                 [self pushDebugEventWithAttributes:@{MMEDebugEventType: MMEDebugEventTypeBackgroundTask,
                                                      MMEEventKeyLocalDebugDescription: @"Ending background task",
-                                                     @"Identifier": @(_backgroundTaskIdentifier)}];
-                [self.application endBackgroundTask:_backgroundTaskIdentifier];
-                _backgroundTaskIdentifier = UIBackgroundTaskInvalid;
+                                                     @"Identifier": @(strongSelf.backgroundTaskIdentifier)}];
+                [self.application endBackgroundTask:strongSelf.backgroundTaskIdentifier];
+                strongSelf.backgroundTaskIdentifier = UIBackgroundTaskInvalid;
             }];
             [self pushDebugEventWithAttributes:@{MMEDebugEventType: MMEDebugEventTypeBackgroundTask,
                                                  MMEEventKeyLocalDebugDescription: @"Initiated background task",
@@ -160,6 +187,8 @@
 
 - (void)flush {
     if (self.paused) {
+        [self pushDebugEventWithAttributes:@{MMEDebugEventType: MMEDebugEventTypeFlush,
+                                             MMEEventKeyLocalDebugDescription: @"Aborting flushing of event queue because collection is paused."}];
         return;
     }
     
@@ -172,6 +201,7 @@
     }
     
     NSArray *events = [self.eventQueue copy];
+    NSUInteger eventsCount = events.count;
     __weak __typeof__(self) weakSelf = self;
     [self.apiClient postEvents:events completionHandler:^(NSError * _Nullable error) {
         __strong __typeof__(weakSelf) strongSelf = weakSelf;
@@ -182,16 +212,16 @@
         } else {
             [strongSelf pushDebugEventWithAttributes:@{MMEDebugEventType: MMEDebugEventTypePost,
                                                        MMEEventKeyLocalDebugDescription: @"post",
-                                                       @"debug.eventsCount": @(events.count)}];
+                                                       @"debug.eventsCount": @(eventsCount)}];
         }
         
         
-        if (_backgroundTaskIdentifier != UIBackgroundTaskInvalid) {
+        if (strongSelf.backgroundTaskIdentifier != UIBackgroundTaskInvalid) {
             [strongSelf pushDebugEventWithAttributes:@{MMEDebugEventType: MMEDebugEventTypeBackgroundTask,
                                                        MMEEventKeyLocalDebugDescription: @"Ending background task",
-                                                       @"Identifier": @(_backgroundTaskIdentifier)}];
-            [strongSelf.application endBackgroundTask:_backgroundTaskIdentifier];
-            _backgroundTaskIdentifier = UIBackgroundTaskInvalid;
+                                                       @"Identifier": @(strongSelf.backgroundTaskIdentifier)}];
+            [strongSelf.application endBackgroundTask:strongSelf.backgroundTaskIdentifier];
+            strongSelf.backgroundTaskIdentifier = UIBackgroundTaskInvalid;
         }
     }];
     
@@ -203,6 +233,8 @@
 }
 
 - (void)sendTurnstileEvent {
+    [self.configurationUpdater updateConfigurationFromAPIClient:self.apiClient];
+    
     if (self.nextTurnstileSendDate && [[self.dateWrapper date] timeIntervalSinceDate:self.nextTurnstileSendDate] < 0) {
         NSString *debugDescription = [NSString stringWithFormat:@"Turnstile event already sent; waiting until %@ to send another one", self.nextTurnstileSendDate];
         [self pushDebugEventWithAttributes:@{MMEDebugEventType: MMEDebugEventTypeTurnstile,
@@ -245,7 +277,6 @@
                                              MMEEventKeyLocalDebugDescription: @"No iOS version available, can not send turntile event"}];
         return;
     }
-    
     
     NSDictionary *turnstileEventAttributes = @{MMEEventKeyEvent: MMEEventTypeAppUserTurnstile,
                                                MMEEventKeyCreated: [self.dateWrapper formattedDateStringForDate:[self.dateWrapper date]],
@@ -296,12 +327,24 @@
     } else if ([name isEqualToString:MMEEventTypeMapDragEnd]) {
         event = [MMEEvent mapDragEndEventWithDateString:[self.dateWrapper formattedDateStringForDate:[self.dateWrapper date]]
                                              attributes:attributes];
+    } else if ([name isEqualToString:MMEventTypeOfflineDownloadStart]) {
+        event = [MMEEvent mapOfflineDownloadStartWithDateString:[self.dateWrapper formattedDateStringForDate:[self.dateWrapper date]] attributes:attributes];
+    } else if ([name isEqualToString:MMEventTypeOfflineDownloadComplete]) {
+        event = [MMEEvent mapOfflineDownloadCompleteWithDateString:[self.dateWrapper formattedDateStringForDate:[self.dateWrapper date]] attributes:attributes];
     }
     
     if ([name hasPrefix:MMENavigationEventPrefix]) {
         event = [MMEEvent navigationEventWithName:name attributes:attributes];
     }
+
+    if ([name hasPrefix:MMEVisionEventPrefix]) {
+        event = [MMEEvent visionEventWithName:name attributes:attributes];
+    }
     
+    if ([name hasPrefix:MMESearchEventPrefix]) {
+        event = [MMEEvent searchEventWithName:name attributes:attributes];
+    }
+
     if (event) {
         [self pushDebugEventWithAttributes:@{MMEDebugEventType: MMEDebugEventTypePush,
                                              MMEEventKeyLocalDebugDescription: [NSString stringWithFormat:@"Pushing event: %@", event]}];
@@ -310,6 +353,14 @@
         [self pushDebugEventWithAttributes:@{MMEDebugEventType: MMEDebugEventTypePush,
                                              MMEEventKeyLocalDebugDescription: [NSString stringWithFormat:@"Unknown event: %@", event]}];
     }
+}
+
+- (void)postMetadata:(NSArray *)metadata filePaths:(NSArray *)filePaths completionHandler:(nullable void (^)(NSError * _Nullable error))completionHandler {
+    [self.apiClient postMetadata:metadata filePaths:filePaths completionHandler:^(NSError * _Nullable error) {
+        if (completionHandler) {
+            completionHandler(error);
+        }
+    }];
 }
 
 - (void)setDebugLoggingEnabled:(BOOL)debugLoggingEnabled {
@@ -393,12 +444,6 @@
         return;
     }
     
-    if (self.paused) {
-        [self pushDebugEventWithAttributes:@{MMEDebugEventType: MMEDebugEventTypePush,
-                                             MMEEventKeyLocalDebugDescription: @"Aborting pushing event because collection is paused."}];
-        return;
-    }
-    
     [self.eventQueue addObject:event];
     [self pushDebugEventWithAttributes:@{MMEDebugEventType: MMEDebugEventTypePush,
                                          MMEEventKeyLocalDebugDescription: [NSString stringWithFormat:@"Added event to event queue; event queue now has %ld events", (long)self.eventQueue.count]}];
@@ -424,6 +469,26 @@
     [MMEEventLogger.sharedLogger readAndDisplayLogFileFromDate:logDate];
 }
 
+#pragma mark - MMEConfiguratorDelegate
+
+- (void)configurator:(id)updater didUpdate:(MMEEventsConfiguration *)configuration {
+    self.configuration = configuration;
+    if ([self.apiClient respondsToSelector:@selector(reconfigure:)]) {
+        [self.apiClient reconfigure:configuration];
+    }
+    if ([self.locationManager respondsToSelector:@selector(reconfigure:)]) {
+        [self.locationManager reconfigure:configuration];
+    }
+    
+    self.configurationUpdater.timeInterval = configuration.configurationRotationTimeInterval;
+    self.uniqueIdentifer.timeInterval = configuration.instanceIdentifierRotationTimeInterval;
+    if (self.timerManager && configuration.eventFlushSecondsThreshold != self.timerManager.timeInterval) {
+        [self.timerManager cancel];
+        self.timerManager = [[MMETimerManager alloc] initWithTimeInterval:self.configuration.eventFlushSecondsThreshold target:self selector:@selector(flush)];
+        [self.timerManager start];
+    }
+}
+
 #pragma mark - MMELocationManagerDelegate
 
 - (void)locationManager:(MMELocationManager *)locationManager didUpdateLocations:(NSArray *)locations {
@@ -440,8 +505,8 @@
                                             instanceIdentifer:self.uniqueIdentifer.rollingInstanceIdentifer
                                               commonEventData:self.commonEventData]];
     }
-    if ([self.delegate respondsToSelector:@selector(locationManager:didUpdateLocations:)]) {
-        [self.delegate locationManager:self.locationManager didUpdateLocations:locations];
+    if ([self.delegate respondsToSelector:@selector(eventsManager:didUpdateLocations:)]) {
+        [self.delegate eventsManager:self didUpdateLocations:locations];
     }
 }
 
@@ -463,6 +528,24 @@
 - (void)locationManagerDidStopLocationUpdates:(MMELocationManager *)locationManager {
     [self pushDebugEventWithAttributes:@{MMEDebugEventType: MMEDebugEventTypeLocationManager,
                                          MMEEventKeyLocalDebugDescription: @"Location manager stopped location updates"}];
+}
+
+- (void)locationManager:(MMELocationManager *)locationManager didVisit:(CLVisit *)visit {
+    [self pushDebugEventWithAttributes:@{MMEDebugEventType: MMEDebugEventTypeLocationManager,
+                                         MMEEventKeyLocalDebugDescription: [NSString stringWithFormat:@"Location manager visit %@", visit]}];
+    
+    CLLocation *location = [[CLLocation alloc] initWithLatitude:visit.coordinate.latitude longitude:visit.coordinate.longitude];
+    MMEMapboxEventAttributes *eventAttributes = @{MMEEventKeyCreated: [self.dateWrapper formattedDateStringForDate:[location timestamp]],
+                                                  MMEEventKeyLatitude: @([location mme_latitudeRoundedWithPrecision:7]),
+                                                  MMEEventKeyLongitude: @([location mme_longitudeRoundedWithPrecision:7]),
+                                                  MMEEventHorizontalAccuracy: @(visit.horizontalAccuracy),
+                                                  MMEEventKeyArrivalDate: [self.dateWrapper formattedDateStringForDate:visit.arrivalDate],
+                                                  MMEEventKeyDepartureDate: [self.dateWrapper formattedDateStringForDate:visit.departureDate]};
+    [self pushEvent:[MMEEvent visitEventWithAttributes:eventAttributes]];
+
+    if ([self.delegate respondsToSelector:@selector(eventsManager:didVisit:)]) {
+        [self.delegate eventsManager:self didVisit:visit];
+    }
 }
 
 @end

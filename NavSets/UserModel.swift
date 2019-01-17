@@ -84,7 +84,6 @@ class UserModel: NSObject, NSCoding{
         //return greater of cost or one cent
         return max(Double(round(100 * Double(cost))/100), 0.01)
         
-        
     }
     
     

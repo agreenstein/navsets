@@ -9,10 +9,16 @@
 
 + (instancetype)turnstileEventWithAttributes:(NSDictionary *)attributes;
 + (instancetype)locationEventWithAttributes:(NSDictionary *)attributes instanceIdentifer:(NSString *)instanceIdentifer commonEventData:(MMECommonEventData *)commonEventData;
++ (instancetype)visitEventWithAttributes:(NSDictionary *)attributes;
 + (instancetype)mapLoadEventWithDateString:(NSString *)dateString commonEventData:(MMECommonEventData *)commonEventData;
 + (instancetype)mapTapEventWithDateString:(NSString *)dateString attributes:(NSDictionary *)attributes;
 + (instancetype)mapDragEndEventWithDateString:(NSString *)dateString attributes:(NSDictionary *)attributes;
++ (instancetype)mapOfflineDownloadStartWithDateString:(NSString *)dateString attributes:(NSDictionary *)attributes;
++ (instancetype)mapOfflineDownloadCompleteWithDateString:(NSString *)dateString attributes:(NSDictionary *)attributes;
 + (instancetype)navigationEventWithName:(NSString *)name attributes:(NSDictionary *)attributes;
++ (instancetype)visionEventWithName:(NSString *)name attributes:(NSDictionary *)attributes;
 + (instancetype)debugEventWithAttributes:(NSDictionary *)attributes;
++ (instancetype)searchEventWithName:(NSString *)name attributes:(NSDictionary *)attributes;
++ (instancetype)carplayEventWithName:(NSString *)name attributes:(NSDictionary *)attributes;
 
 @end

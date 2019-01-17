@@ -1,36 +1,42 @@
 import UIKit
 
-protocol StatusViewDelegate: class {
-    func statusView(_ statusView: StatusView, valueChangedTo value: Double)
+/**
+ A protocol for listening in on changed mades made to a `StatusView`.
+ */
+@objc public protocol StatusViewDelegate: class {
+    /**
+     Indicates a value in the status view has changed by the user interacting with it.
+     */
+    @objc optional func statusView(_ statusView: StatusView, valueChangedTo value: Double)
 }
 
 /// :nodoc:
 @IBDesignable
 @objc(MBStatusView)
 public class StatusView: UIView {
+    
     weak var activityIndicatorView: UIActivityIndicatorView!
     weak var textLabel: UILabel!
-    weak var delegate: StatusViewDelegate?
+    @objc public weak var delegate: StatusViewDelegate?
     var panStartPoint: CGPoint?
     
-    var canChangeValue = false
+    var isCurrentlyVisible: Bool = false
+    @objc public var canChangeValue = false
     var value: Double = 0 {
         didSet {
-            delegate?.statusView(self, valueChangedTo: value)
+            delegate?.statusView?(self, valueChangedTo: value)
         }
     }
     
-    public override init(frame: CGRect) {
+    @objc public override init(frame: CGRect) {
         super.init(frame: frame)
         commonInit()
     }
     
-    public required init?(coder aDecoder: NSCoder) {
+    @objc public required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
         commonInit()
     }
-    
-    var isCurrentlyVisible: Bool?
     
     func commonInit() {
         let activityIndicatorView = UIActivityIndicatorView(activityIndicatorStyle: .white)
@@ -84,50 +90,65 @@ public class StatusView: UIView {
         let location = sender.location(in: self)
         
         if sender.state == .ended {
-            let incrementer = location.x > bounds.midX ? 0.1 : -0.1
+            let incrementer: Double
+            switch UIApplication.shared.userInterfaceLayoutDirection {
+            case .leftToRight:
+                incrementer = location.x > bounds.midX ? 0.1 : -0.1
+            case .rightToLeft:
+                incrementer = location.x < bounds.midX ? 0.1 : -0.1
+            }
             value = min(max(value + incrementer, 0), 1)
         }
     }
     
-    func show(_ title: String, showSpinner: Bool) {
+    /**
+     Shows the status view with an optional spinner.
+     */
+    public func show(_ title: String, showSpinner: Bool, interactive: Bool = false) {
+        canChangeValue = interactive
         textLabel.text = title
         activityIndicatorView.hidesWhenStopped = true
-        if showSpinner {
-            activityIndicatorView.startAnimating()
-        } else {
-            activityIndicatorView.stopAnimating()
-        }
-        
-        guard isCurrentlyVisible != true else { return }
-        
-        guard isHidden == true else { return }
-        
-        UIView.defaultAnimation(0.3, animations: {
+        if (!showSpinner) { activityIndicatorView.stopAnimating() }
+
+        guard isCurrentlyVisible == false, isHidden == true else { return }
+                
+        let show = {
             self.isHidden = false
             self.textLabel.alpha = 1
+            if (showSpinner) { self.activityIndicatorView.isHidden = false }
             self.superview?.layoutIfNeeded()
-        }, completion: { (completed) in
+        }
+        
+        UIView.defaultAnimation(0.3, animations:show, completion:{ _ in
             self.isCurrentlyVisible = true
+            guard showSpinner else { return }
+            self.activityIndicatorView.startAnimating()
         })
     }
     
-    func hide(delay: TimeInterval = 0, animated: Bool = true) {
+    /**
+     Hides the status view.
+     */
+    public func hide(delay: TimeInterval = 0, animated: Bool = true) {
         
-        if animated {
-            guard isHidden == false else { return }
-            
-            UIView.defaultAnimation(0.3, delay: delay, animations: {
-                self.isHidden = true
-                self.textLabel.alpha = 0
-                self.superview?.layoutIfNeeded()
-            }, completion: { (completed) in
-                self.activityIndicatorView.stopAnimating()
-                self.isCurrentlyVisible = false
-            })
-        } else {
-            activityIndicatorView.stopAnimating()
-            isHidden = true
-            isCurrentlyVisible = false
+        let hide = {
+            self.isHidden = true
+            self.textLabel.alpha = 0
+            self.activityIndicatorView.isHidden = true
         }
+        
+        let animate = {
+            guard self.isHidden == false else { return }
+            
+            let fireTime = DispatchTime.now() + delay
+            DispatchQueue.main.asyncAfter(deadline: fireTime, execute: {
+                self.activityIndicatorView.stopAnimating()
+                UIView.defaultAnimation(0.3, delay: 0, animations: hide, completion: { _ in
+                    self.isCurrentlyVisible = false
+                })
+            })
+        }
+        
+        animated ? animate() : hide()
     }
 }

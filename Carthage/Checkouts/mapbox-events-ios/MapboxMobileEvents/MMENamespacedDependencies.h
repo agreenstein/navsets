@@ -1,4 +1,5 @@
-// Namespaced Header
+// This namespaced header is generated.
+// Add source files to the MapboxMobileEventsStatic target, then run `make name-header`.
 
 #ifndef __NS_SYMBOL
 // We need to have multiple levels of macros here so that __NAMESPACE_PREFIX_ is
@@ -22,12 +23,20 @@
 #define MMECommonEventData __NS_SYMBOL(MMECommonEventData)
 #endif
 
+#ifndef MMEConfigurator
+#define MMEConfigurator __NS_SYMBOL(MMEConfigurator)
+#endif
+
 #ifndef MMEConstants
 #define MMEConstants __NS_SYMBOL(MMEConstants)
 #endif
 
 #ifndef MMEDependencyManager
 #define MMEDependencyManager __NS_SYMBOL(MMEDependencyManager)
+#endif
+
+#ifndef MMEDispatchManager
+#define MMEDispatchManager __NS_SYMBOL(MMEDispatchManager)
 #endif
 
 #ifndef MMEEvent
@@ -50,6 +59,10 @@
 #define MMEEventsManager __NS_SYMBOL(MMEEventsManager)
 #endif
 
+#ifndef MMEHashProvider
+#define MMEHashProvider __NS_SYMBOL(MMEHashProvider)
+#endif
+
 #ifndef MMELocationManager
 #define MMELocationManager __NS_SYMBOL(MMELocationManager)
 #endif
@@ -70,8 +83,8 @@
 #define MMETimerManager __NS_SYMBOL(MMETimerManager)
 #endif
 
-#ifndef MMETrustKitWrapper
-#define MMETrustKitWrapper __NS_SYMBOL(MMETrustKitWrapper)
+#ifndef MMETrustKitProvider
+#define MMETrustKitProvider __NS_SYMBOL(MMETrustKitProvider)
 #endif
 
 #ifndef MMETypes
@@ -155,6 +168,14 @@
 #define convertPinsToHpkpPins __NS_SYMBOL(convertPinsToHpkpPins)
 #endif
 
+#ifndef __clang_at_available_requires_core_foundation_framework
+#define __clang_at_available_requires_core_foundation_framework __NS_SYMBOL(__clang_at_available_requires_core_foundation_framework)
+#endif
+
+#ifndef __clang_at_available_requires_core_foundation_framework
+#define __clang_at_available_requires_core_foundation_framework __NS_SYMBOL(__clang_at_available_requires_core_foundation_framework)
+#endif
+
 // Externs
 #ifndef _loggerBlock
 #define _loggerBlock __NS_SYMBOL(_loggerBlock)
@@ -172,16 +193,20 @@
 #define MMENSURLSessionWrapper __NS_SYMBOL(MMENSURLSessionWrapper)
 #endif
 
-#ifndef MMEAPIClient
-#define MMEAPIClient __NS_SYMBOL(MMEAPIClient)
-#endif
-
 #ifndef MMELocationManager
 #define MMELocationManager __NS_SYMBOL(MMELocationManager)
 #endif
 
+#ifndef MMEAPIClient
+#define MMEAPIClient __NS_SYMBOL(MMEAPIClient)
+#endif
+
 #ifndef MMELocationManagerDelegate
 #define MMELocationManagerDelegate __NS_SYMBOL(MMELocationManagerDelegate)
+#endif
+
+#ifndef MMEConfiguratorDelegate
+#define MMEConfiguratorDelegate __NS_SYMBOL(MMEConfiguratorDelegate)
 #endif
 
 #ifndef MapboxMobileEventsStaticVersionString
@@ -280,8 +305,28 @@
 #define MMEAPIClientBaseURL __NS_SYMBOL(MMEAPIClientBaseURL)
 #endif
 
+#ifndef MMEAPIClientBaseAPIURL
+#define MMEAPIClientBaseAPIURL __NS_SYMBOL(MMEAPIClientBaseAPIURL)
+#endif
+
+#ifndef MMEAPIClientBaseChinaEventsURL
+#define MMEAPIClientBaseChinaEventsURL __NS_SYMBOL(MMEAPIClientBaseChinaEventsURL)
+#endif
+
+#ifndef MMEAPIClientBaseChinaAPIURL
+#define MMEAPIClientBaseChinaAPIURL __NS_SYMBOL(MMEAPIClientBaseChinaAPIURL)
+#endif
+
 #ifndef MMEAPIClientEventsPath
 #define MMEAPIClientEventsPath __NS_SYMBOL(MMEAPIClientEventsPath)
+#endif
+
+#ifndef MMEAPIClientEventsConfigPath
+#define MMEAPIClientEventsConfigPath __NS_SYMBOL(MMEAPIClientEventsConfigPath)
+#endif
+
+#ifndef MMEAPIClientAttachmentsPath
+#define MMEAPIClientAttachmentsPath __NS_SYMBOL(MMEAPIClientAttachmentsPath)
 #endif
 
 #ifndef MMEAPIClientHeaderFieldUserAgentKey
@@ -296,12 +341,20 @@
 #define MMEAPIClientHeaderFieldContentTypeValue __NS_SYMBOL(MMEAPIClientHeaderFieldContentTypeValue)
 #endif
 
+#ifndef MMEAPIClientAttachmentsHeaderFieldContentTypeValue
+#define MMEAPIClientAttachmentsHeaderFieldContentTypeValue __NS_SYMBOL(MMEAPIClientAttachmentsHeaderFieldContentTypeValue)
+#endif
+
 #ifndef MMEAPIClientHeaderFieldContentEncodingKey
 #define MMEAPIClientHeaderFieldContentEncodingKey __NS_SYMBOL(MMEAPIClientHeaderFieldContentEncodingKey)
 #endif
 
 #ifndef MMEAPIClientHTTPMethodPost
 #define MMEAPIClientHTTPMethodPost __NS_SYMBOL(MMEAPIClientHTTPMethodPost)
+#endif
+
+#ifndef MMEAPIClientHTTPMethodGet
+#define MMEAPIClientHTTPMethodGet __NS_SYMBOL(MMEAPIClientHTTPMethodGet)
 #endif
 
 #ifndef MMEErrorDomain
@@ -364,8 +417,20 @@
 #define MMEEventTypeLocation __NS_SYMBOL(MMEEventTypeLocation)
 #endif
 
+#ifndef MMEEventTypeVisit
+#define MMEEventTypeVisit __NS_SYMBOL(MMEEventTypeVisit)
+#endif
+
 #ifndef MMEEventTypeLocalDebug
 #define MMEEventTypeLocalDebug __NS_SYMBOL(MMEEventTypeLocalDebug)
+#endif
+
+#ifndef MMEventTypeOfflineDownloadStart
+#define MMEventTypeOfflineDownloadStart __NS_SYMBOL(MMEventTypeOfflineDownloadStart)
+#endif
+
+#ifndef MMEventTypeOfflineDownloadComplete
+#define MMEventTypeOfflineDownloadComplete __NS_SYMBOL(MMEventTypeOfflineDownloadComplete)
 #endif
 
 #ifndef MMEEventGestureSingleTap
@@ -398,6 +463,14 @@
 
 #ifndef MMEEventGesturePitchStart
 #define MMEEventGesturePitchStart __NS_SYMBOL(MMEEventGesturePitchStart)
+#endif
+
+#ifndef MMEEventKeyArrivalDate
+#define MMEEventKeyArrivalDate __NS_SYMBOL(MMEEventKeyArrivalDate)
+#endif
+
+#ifndef MMEEventKeyDepartureDate
+#define MMEEventKeyDepartureDate __NS_SYMBOL(MMEEventKeyDepartureDate)
 #endif
 
 #ifndef MMEEventKeyLatitude
@@ -508,6 +581,10 @@
 #define MMENavigationEventPrefix __NS_SYMBOL(MMENavigationEventPrefix)
 #endif
 
+#ifndef MMEVisionEventPrefix
+#define MMEVisionEventPrefix __NS_SYMBOL(MMEVisionEventPrefix)
+#endif
+
 #ifndef MMEEventTypeNavigationDepart
 #define MMEEventTypeNavigationDepart __NS_SYMBOL(MMEEventTypeNavigationDepart)
 #endif
@@ -528,8 +605,28 @@
 #define MMEEventTypeNavigationReroute __NS_SYMBOL(MMEEventTypeNavigationReroute)
 #endif
 
+#ifndef MMEventTypeNavigationCarplayConnect
+#define MMEventTypeNavigationCarplayConnect __NS_SYMBOL(MMEventTypeNavigationCarplayConnect)
+#endif
+
+#ifndef MMEventTypeNavigationCarplayDisconnect
+#define MMEventTypeNavigationCarplayDisconnect __NS_SYMBOL(MMEventTypeNavigationCarplayDisconnect)
+#endif
+
 #ifndef MMEDebugEventType
 #define MMEDebugEventType __NS_SYMBOL(MMEDebugEventType)
+#endif
+
+#ifndef MMESearchEventPrefix
+#define MMESearchEventPrefix __NS_SYMBOL(MMESearchEventPrefix)
+#endif
+
+#ifndef MMEEventTypeSearchSelected
+#define MMEEventTypeSearchSelected __NS_SYMBOL(MMEEventTypeSearchSelected)
+#endif
+
+#ifndef MMEEventTypeSearchFeedback
+#define MMEEventTypeSearchFeedback __NS_SYMBOL(MMEEventTypeSearchFeedback)
 #endif
 
 #ifndef MMEEventSource
@@ -540,23 +637,31 @@
 #define MMELoggerHTML __NS_SYMBOL(MMELoggerHTML)
 #endif
 
-#ifndef MMELoggerShareableHTML
-#define MMELoggerShareableHTML __NS_SYMBOL(MMELoggerShareableHTML)
+#ifndef kMMEReachabilityChangedNotification
+#define kMMEReachabilityChangedNotification __NS_SYMBOL(kMMEReachabilityChangedNotification)
 #endif
 
-#ifndef MMELocationManagerHibernationRadius
-#define MMELocationManagerHibernationRadius __NS_SYMBOL(MMELocationManagerHibernationRadius)
+#ifndef MMELoggerShareableHTML
+#define MMELoggerShareableHTML __NS_SYMBOL(MMELoggerShareableHTML)
 #endif
 
 #ifndef MMELocationManagerDistanceFilter
 #define MMELocationManagerDistanceFilter __NS_SYMBOL(MMELocationManagerDistanceFilter)
 #endif
 
-#ifndef kMMEReachabilityChangedNotification
-#define kMMEReachabilityChangedNotification __NS_SYMBOL(kMMEReachabilityChangedNotification)
+#ifndef MMERadiusAccuracyMax
+#define MMERadiusAccuracyMax __NS_SYMBOL(MMERadiusAccuracyMax)
 #endif
 
 #ifndef MMELocationManagerRegionIdentifier
 #define MMELocationManagerRegionIdentifier __NS_SYMBOL(MMELocationManagerRegionIdentifier)
+#endif
+
+#ifndef kMMEResponseKey
+#define kMMEResponseKey __NS_SYMBOL(kMMEResponseKey)
+#endif
+
+#ifndef kMMEMaxRequestCount
+#define kMMEMaxRequestCount __NS_SYMBOL(kMMEMaxRequestCount)
 #endif
 

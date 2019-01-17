@@ -1,4 +1,5 @@
-github "mapbox/mapbox-navigation-ios" ~> 0.14
-github "mapbox/MapboxGeocoder.swift" ~> 0.6
+github "mapbox/mapbox-navigation-ios" ~> 0.27
+github "mapbox/MapboxGeocoder.swift" ~> 0.10
 github "uber/rides-ios-sdk" ~> 0.7
 github "Alamofire/Alamofire" "4.4.0"
+github "stripe/stripe-ios"

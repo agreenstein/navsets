@@ -1,14 +1,5 @@
 import Foundation
 
-typealias NoArgBlock = () -> Void
-
-protocol BimodalImageCache {
-    func store(_ image: UIImage, forKey key: String, toDisk: Bool, completion completionBlock: NoArgBlock?)
-    func imageFromCache(forKey: String?) -> UIImage?
-    func clearMemory()
-    func clearDisk(completion: NoArgBlock?)
-}
-
 class ImageRepository {
 
     public var sessionConfiguration: URLSessionConfiguration = URLSessionConfiguration.default {
@@ -17,19 +8,20 @@ class ImageRepository {
         }
     }
 
-    public static let shared = ImageRepository.init(withDownloader: ImageDownloader(), cache: ImageCache())
+    public static let shared = ImageRepository.init()
 
     let imageCache: BimodalImageCache
     fileprivate(set) var imageDownloader: ReentrantImageDownloader
 
-    var useDiskCache = true
+    var useDiskCache: Bool
 
-    required init(withDownloader downloader: ReentrantImageDownloader, cache: BimodalImageCache) {
+    required init(withDownloader downloader: ReentrantImageDownloader = ImageDownloader(), cache: BimodalImageCache = ImageCache(), useDisk: Bool = true) {
         imageDownloader = downloader
         imageCache = cache
+        useDiskCache = useDisk
     }
 
-    func resetImageCache(_ completion: NoArgBlock?) {
+    func resetImageCache(_ completion: CompletionHandler?) {
         imageCache.clearMemory()
         imageCache.clearDisk(completion: completion)
     }
@@ -39,7 +31,7 @@ class ImageRepository {
     }
 
     func cachedImageForKey(_ key: String) -> UIImage? {
-        return imageCache.imageFromCache(forKey: key)
+        return imageCache.image(forKey: key)
     }
 
     func imageWithURL(_ imageURL: URL, cacheKey: String, completion: @escaping (UIImage?) -> Void) {

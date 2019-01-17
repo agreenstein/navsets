@@ -21,7 +21,7 @@ extern const NSNotificationName MBRouteControllerWillRerouteNotification;
 /**
  Posted when `MBRouteController` obtains a new route in response to the user diverging from a previous route.
  
- The user info dictionary contains the keys `MBRouteControllerLocationKey` and `MBRouteControllerIsOpportunisticKey`.
+ The user info dictionary contains the keys `MBRouteControllerLocationKey` and `MBRouteControllerIsProactiveKey`.
  
  :nodoc:
  */
@@ -45,6 +45,8 @@ extern const NSNotificationName MBRouteControllerDidFailToRerouteNotification;
  */
 extern const NSNotificationName MBRouteControllerDidPassSpokenInstructionPointNotification;
 
+extern const NSNotificationName MBRouteControllerDidPassVisualInstructionPointNotification;
+
 /**
  Keys in the user info dictionaries of various notifications posted by instances of `MBRouteController`.
  
@@ -58,9 +60,14 @@ typedef NSString *MBRouteControllerNotificationUserInfoKey NS_EXTENSIBLE_STRING_
 extern const MBRouteControllerNotificationUserInfoKey MBRouteControllerRouteProgressKey;
 
 /**
- A key in the user info dictionary of a `Notification.Name.MBRouteControllerProgressDidChange` or `Notification.Name.RouteControllerWillReroute` notification. The corresponding value is a `CLLocation` object representing the current user location.
+ A key in the user info dictionary of a `Notification.Name.MBRouteControllerProgressDidChange` or `Notification.Name.RouteControllerWillReroute` notification. The corresponding value is a `CLLocation` object representing the current idealized user location.
  */
 extern const MBRouteControllerNotificationUserInfoKey MBRouteControllerLocationKey;
+
+/**
+ A key in the user info dictionary of a `Notification.Name.MBRouteControllerProgressDidChange` or `Notification.Name.RouteControllerWillReroute` notification. The corresponding value is a `CLLocation` object representing the current raw user location.
+ */
+extern const MBRouteControllerNotificationUserInfoKey MBRouteControllerRawLocationKey;
 
 /**
  A key in the user info dictionary of a `Notification.Name.RouteControllerDidFailToReroute` notification. The corresponding value is an `NSError` object indicating why `RouteController` was unable to calculate a new route.
@@ -68,6 +75,11 @@ extern const MBRouteControllerNotificationUserInfoKey MBRouteControllerLocationK
 extern const MBRouteControllerNotificationUserInfoKey MBRouteControllerRoutingErrorKey;
 
 /**
- A key in the user info dictionary of a `Notification.Name.RouteControllerDidReroute` notification. The corresponding value is an `NSNumber` instance containing a Boolean value indicating whether `RouteController` opportunistically rerouted the user onto a faster route.
+ A key in the user info dictionary of a `Notification.Name.RouteControllerDidReroute` notification. The corresponding value is an `NSNumber` instance containing a Boolean value indicating whether `RouteController` proactively rerouted the user onto a faster route.
  */
-extern const MBRouteControllerNotificationUserInfoKey MBRouteControllerIsOpportunisticKey;
+extern const MBRouteControllerNotificationUserInfoKey MBRouteControllerIsProactiveKey;
+
+@interface NSString (MD5)
+- (NSString * _Nonnull)md5;
+@end
+

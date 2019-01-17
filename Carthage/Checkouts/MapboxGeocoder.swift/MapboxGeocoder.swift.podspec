@@ -3,7 +3,7 @@ Pod::Spec.new do |s|
   # ―――  Spec Metadata  ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #
 
   s.name         = "MapboxGeocoder.swift"
-  s.version      = "0.6.3"
+  s.version      = "0.10.1"
   s.summary      = "Mapbox Geocoding API for Swift and Objective-C."
 
   s.description  = <<-DESC
@@ -41,5 +41,6 @@ Pod::Spec.new do |s|
 
   s.requires_arc = true
   s.module_name = "MapboxGeocoder"
+  s.swift_version = "4.2"
 
 end

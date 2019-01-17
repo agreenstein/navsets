@@ -16,7 +16,7 @@ import UberRides
 import Stripe
 import os.log
 
-class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewDelegate, UITableViewDataSource, UITableViewDelegate, STPPaymentContextDelegate {
+class RouteViewController: UIViewController, UITextFieldDelegate, MGLMapViewDelegate, UITableViewDataSource, UITableViewDelegate, STPPaymentContextDelegate {
     //MARK: Properties
     @IBOutlet weak var destinationField: UITextField!
     @IBOutlet weak var backButton: UIButton!
@@ -53,8 +53,6 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     let activityIndicator = UIActivityIndicatorView(activityIndicatorStyle: .gray)
     let insets = UIEdgeInsets(top: 35, left: 25, bottom: 15, right: 25)
     let chargeThreshold = 500
-//    var justChargedCard = false
-//    var previousOverpaid = 0
     var paymentInProgress: Bool = false {
         didSet {
             UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseIn, animations: {
@@ -71,7 +69,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     }
     
     required init?(coder aDecoder: NSCoder) {
-        customerContext = STPCustomerContext(keyProvider: MainAPIClient.sharedClient)
+        customerContext = STPCustomerContext(keyProvider: StripeAPIClient.sharedClient)
         paymentContext = STPPaymentContext(customerContext: customerContext)
         
         super.init(coder: aDecoder)
@@ -172,8 +170,8 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        // see if we need to charge the user's card
-        checkNeedToChargeCard()
+//        // see if we need to charge the user's card
+//        checkNeedToChargeCard()
         updateCostProgressAndHistory(animated: true)
     }
 
@@ -341,7 +339,13 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
 //            }
         }
         
-        let viewController = NavigationViewController(for: route, locationManager: SimulatedLocationManager(route:route))
+//        let viewController = NavigationViewController(for: route, locationManager: SimulatedLocationManager(route:route))
+//        let viewController = NavigationViewController(for: route)
+        let service = MapboxNavigationService(route: route)
+        service.simulationMode = .always
+        service.simulationSpeedMultiplier = 10
+        let viewController = NavigationViewController(for: route, navigationService: service)
+        //        let viewController = NavigationViewController(for: route)
         viewController.delegate = self
         self.present(viewController, animated: true, completion: nil)
     }
@@ -459,8 +463,8 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
                 // make sure an actual location cell was selected
                 if (placemark != nil){
                     // Update the route model and set the text in the search field
-                    self.routeModel!.startLocation = (placemark?.location.coordinate)!
-                    self.originField.text = placemark?.qualifiedName
+                    self.routeModel!.startLocation = (placemark?.location?.coordinate)!
+                    self.originField.text = placemark?.name
                     self.originField.endEditing(true)
                     // Hide the current location button
 //                    currentLocationButton.isHidden = true
@@ -475,9 +479,9 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
                 // make sure an actual location cell was selected
                 if (placemark != nil){
                     // Update the route model and set the text in the search field
-                    self.routeModel!.destinationLocation = (placemark?.location.coordinate)!
+                    self.routeModel!.destinationLocation = (placemark?.location?.coordinate)!
                     self.routeModel!.destinationName = placemark?.qualifiedName
-                    self.destinationField.text = placemark?.qualifiedName
+                    self.destinationField.text = placemark?.name
                     self.destinationField.endEditing(true)
                 }
                 else {
@@ -539,16 +543,20 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     @IBAction func startNav(_ sender: UIButton) {
         if sender === startButton{
             if (selectedTransitButton == carButton) || (selectedTransitButton == uberButton){
-                self.userModel?.cumulativeCost += (self.routeModel?.routeCost)!
-                saveUser()
-                // justChargedCard will only be true right after a successful transaction
-//                justChargedCard = false
-                updateCostProgressAndHistory(animated: true)
-                if (selectedTransitButton == uberButton){
-                    self.launchUberButton.requestBehavior.requestRide(parameters: self.launchUberButton.rideParameters)
+                // see if we need to charge the user's card
+                if ((self.userModel?.cumulativeCost)! >= chargeThreshold){
+                    chargeCard()
                 }
                 else {
-                    self.presentNavigation(along: self.directionsRoute!)
+                    self.userModel?.cumulativeCost += (self.routeModel?.routeCost)!
+                    saveUser()
+                    updateCostProgressAndHistory(animated: true)
+                    if (selectedTransitButton == uberButton){
+                        self.launchUberButton.requestBehavior.requestRide(parameters: self.launchUberButton.rideParameters)
+                    }
+                    else {
+                        self.presentNavigation(along: self.directionsRoute!)
+                    }
                 }
             }
             else{
@@ -642,7 +650,7 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
     
     func paymentContext(_ paymentContext: STPPaymentContext, didCreatePaymentResult paymentResult: STPPaymentResult, completion: @escaping STPErrorBlock) {
         // Create charge using payment result
-        MainAPIClient.sharedClient.completeCharge(paymentResult,
+        StripeAPIClient.sharedClient.completeCharge(paymentResult,
                                                   amount: self.paymentContext.paymentAmount,
                                                   currency: "usd",
                                                   customer: (self.userModel?.stripeID!)!,
@@ -658,11 +666,6 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
             title = "Error"
             message = error?.localizedDescription ?? ""
             print ("payment failure")
-            checkNeedToChargeCard()
-            // remove the route that wasn't actually purchased
-//            self.userModel?.cumulativeCost -= (self.routeModel?.routeCost)!
-//            saveUser()
-//            updateCostProgress(animated: true)
         case .success:
             title = "Success"
             message = "Offsets purchased"
@@ -671,11 +674,6 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
             // update the last charge and total history
             self.userModel?.totalOffsetHistory += (self.userModel?.cumulativeCost)!
             self.userModel?.lastChargeAmount = (self.userModel?.cumulativeCost)!
-            // uikit updates need to happen in main thread
-//            DispatchQueue.main.async(){
-//                self.totalOffsetHistory.text = String(format: "$%.2f", (self.userModel?.totalOffsetHistory)! / 100)
-//                self.lastChargeInfo.text = String(format: "$%.2f", (self.userModel?.lastChargeAmount)! / 100)
-//            }
             print ("Total offset history is now: " + String(format: "$%.2f", (self.userModel?.totalOffsetHistory)! / 100))
             print ("Last charge amount is now: " + String(format: "$%.2f", (self.userModel?.lastChargeAmount)! / 100))
             // reset the cumulative cost, charge threshold, and previous overpaid
@@ -683,11 +681,6 @@ class SelectorViewController: UIViewController, UITextFieldDelegate, MGLMapViewD
             saveUser()
             updateCostProgressAndHistory(animated: true)
         case .userCancellation:
-            checkNeedToChargeCard()
-            // remove the route that wasn't actually purchased
-//            self.userModel?.cumulativeCost -= (self.routeModel?.routeCost)!
-//            saveUser()
-//            updateCostProgress(animated: true)
             return
         }
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
@@ -721,37 +714,18 @@ class CustomPolyline: MGLPolylineFeature {
 }
 
 //MARK: NavigationViewControllerDelegate
-extension SelectorViewController: NavigationViewControllerDelegate {
-    func navigationViewControllerDidCancelNavigation(_ navigationViewController: NavigationViewController) {
+extension RouteViewController: NavigationViewControllerDelegate {
+    func navigationViewControllerDidDismiss(_ navigationViewController: NavigationViewController, byCanceling canceled: Bool) {
         print ("navigation canceled")
         navigationViewController.dismiss(animated: true, completion: nil)
         // True up the actual distance traveled -> only do this if <90% of the total distance (and car is selected transit mode, not done for uber)
-        // Calculations done assuming that the route traveled is similar enough to the originally charged one
-        // so that we can just multiply the fraction traveled by the original cost to determine how much the user should have paid
+        // Calculations done assuming that the route traveled is similar enough to the originally charged one so that we can just multiply the fraction traveled by the original cost to determine how much the user should have paid
         if (selectedTransitButton == carButton){
-            let fractionTraveled = navigationViewController.routeController.routeProgress.fractionTraveled
+            let fractionTraveled = navigationViewController.navigationService.routeProgress.fractionTraveled
             if fractionTraveled < 0.9 {
                 let amountOverpaid = (1 - fractionTraveled) * Double((self.routeModel?.routeCost)!)
-                // if user was just charged but didn't drive the whole way, don't change the cumulative cost (keep it at 0) but instead change the charge threshold (until user hits that and needs to purchase again)
-//                if (justChargedCard){
-//                    previousOverpaid = Int(amountOverpaid)
-//                    chargeThreshold += Int(amountOverpaid)
-//                    print ("New charge threshold:g")
-//                    print (chargeThreshold)
-//                    // routeCost, cumulativeCost, and amountOverpaid are in cents so need to divide by 100
-//                    let amountOverpaidString = String(format: "$%.2f", amountOverpaid / 100)
-//                    // present an alert to tell the user how much they were actually charged for
-//                    let title = "Thanks for using NavSets" // should change this
-//                    let message = "We detected that you didn't drive the full route you purchased.  Your account has been credited with the difference of " + amountOverpaidString
-//                    let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
-//                    let action = UIAlertAction(title: "OK", style: .default, handler: nil)
-//                    alertController.addAction(action)
-//                    self.present(alertController, animated: true, completion: nil)
-//                }
-//                else{
                     self.userModel?.cumulativeCost -= Int(amountOverpaid)
                     saveUser()
-//                }
                 updateCostProgressAndHistory(animated: true)
             }
         }

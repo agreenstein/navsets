@@ -81,7 +81,7 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
             cust_id = (self.userModel?.stripeID)!
         }
         // add logic to check for internet connection?
-        let auth_result = MainAPIClient.sharedClient.authenticate(customer: cust_id)
+        let auth_result = StripeAPIClient.sharedClient.authenticate(customer: cust_id)
         if self.userModel?.stripeID != auth_result{
             self.userModel?.stripeID = auth_result
         }
@@ -226,11 +226,11 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
             if (placemark != nil){
             // Create a basic point annotation and add it to the map
             let annotation = MGLPointAnnotation()
-            annotation.coordinate = (placemark?.location.coordinate)!
+                annotation.coordinate = (placemark?.location?.coordinate)!
             mapView.addAnnotation(annotation)        // Update the route model and set the text in the search field
-            self.routeModel!.destinationLocation = (placemark?.location.coordinate)!
+                self.routeModel!.destinationLocation = (placemark?.location?.coordinate)!
             self.routeModel!.startLocation = mapView.userLocation?.coordinate
-            self.locationSearchTextField.text = placemark?.qualifiedName
+            self.locationSearchTextField.text = placemark?.name
             // Segue to other view
             self.performSegue(withIdentifier: "LocationSelected", sender: self.resultsTable)
         }
@@ -246,15 +246,15 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
         let destinationController = segue.destination
         switch(id ?? ""){
         case "LocationSelected":
-            guard let destination = destinationController as? SelectorViewController else {
+            guard let destination = destinationController as? RouteViewController else {
                 fatalError("Invalid destination controller: \(segue.destination)")
             }
             // update route model object for passing to selector view
             // if the destination location hadn't been set yet, set it to the first geocoding result
             if (self.routeModel?.destinationLocation?.latitude == nil){
-                self.routeModel?.destinationLocation = forwardGeocodeResults?.first?.location.coordinate
+                self.routeModel?.destinationLocation = forwardGeocodeResults?.first?.location?.coordinate
                 self.routeModel!.startLocation = mapView.userLocation?.coordinate
-                locationSearchTextField.text = forwardGeocodeResults?.first?.qualifiedName
+                locationSearchTextField.text = forwardGeocodeResults?.first?.name
             }
             if let destinationName = locationSearchTextField.text{
                 self.routeModel!.destinationName = destinationName
@@ -269,7 +269,7 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
     
     //MARK: Actions
     @IBAction func unwindToBase(sender: UIStoryboardSegue){
-        if let sourceViewController = sender.source as? SelectorViewController, let routeModel = sourceViewController.routeModel, let user = sourceViewController.userModel {
+        if let sourceViewController = sender.source as? RouteViewController, let routeModel = sourceViewController.routeModel, let user = sourceViewController.userModel {
             // set route model to be the model from the previous view
             self.routeModel = routeModel
             updateRouteModel()
@@ -302,18 +302,29 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
         
         // Add code here that clears out everything on view impacted by route model
     }
-    
+
     private func saveUser(){
-        let isSuccessfulSave = NSKeyedArchiver.archiveRootObject(self.userModel, toFile: UserModel.ArchiveURL.path)
-        if isSuccessfulSave {
+        do {
+            let data = try NSKeyedArchiver.archivedData(withRootObject: self.userModel!, requiringSecureCoding: false)
+            try data.write(to: UserModel.ArchiveURL)
             os_log("User successfully saved.", log: OSLog.default, type: .debug)
-        } else {
+        } catch {
             os_log("Failed to save user...", log: OSLog.default, type: .error)
         }
     }
     
     private func loadUser() -> UserModel?  {
-        return NSKeyedUnarchiver.unarchiveObject(withFile: UserModel.ArchiveURL.path) as? UserModel
+        if let nsData = NSData(contentsOfFile: UserModel.ArchiveURL.path) {
+            do {
+                let userData = Data(referencing:nsData)
+                let user = try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(userData) as? UserModel
+                return user
+            }
+            catch {
+                os_log("Failed to load user...", log: OSLog.default, type: .error)
+            }
+        }
+        return self.userModel
     }
 
 }

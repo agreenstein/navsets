@@ -43,8 +43,11 @@ class ReverseGeocodingTests: XCTestCase {
         XCTAssertEqual(pointOfInterestPlacemark.name, "Jones Jerry", "reverse geocode should populate name")
         XCTAssertEqual(pointOfInterestPlacemark.qualifiedNameComponents, ["Jones Jerry", "2850 CR 3100", "Independence", "Kansas 67301", "United States"], "reverse geocode should populate qualified name")
         XCTAssertEqual(pointOfInterestPlacemark.qualifiedName, "Jones Jerry, 2850 CR 3100, Independence, Kansas 67301, United States", "reverse geocode should populate qualified name")
-        XCTAssertEqual(pointOfInterestPlacemark.location.coordinate.latitude, 37.128003, "reverse geocode should populate location")
-        XCTAssertEqual(pointOfInterestPlacemark.location.coordinate.longitude, -95.782951, "reverse geocode should populate location")
+        XCTAssertEqual(pointOfInterestPlacemark.genres!, ["legal", "lawyer", "law", "law office"])
+        XCTAssertEqual(pointOfInterestPlacemark.phoneNumber!, "(620) 289-4288")
+        XCTAssertEqual(pointOfInterestPlacemark.imageName!, "suitcase")
+        XCTAssertEqual(pointOfInterestPlacemark.location!.coordinate.latitude, 37.128003, "reverse geocode should populate location")
+        XCTAssertEqual(pointOfInterestPlacemark.location!.coordinate.longitude, -95.782951, "reverse geocode should populate location")
         XCTAssertEqual(pointOfInterestPlacemark.scope, PlacemarkScope.pointOfInterest, "reverse geocode should populate scope")
         XCTAssertEqual(pointOfInterestPlacemark.country?.code, "US", "reverse geocode should populate ISO country code")
         XCTAssertEqual(pointOfInterestPlacemark.country?.name, "United States", "reverse geocode should populate country")
@@ -66,10 +69,15 @@ class ReverseGeocodingTests: XCTestCase {
         let southWest = CLLocationCoordinate2D(latitude: 37.033229992893, longitude: -95.927990005645)
         let northEast = CLLocationCoordinate2D(latitude: 37.35632800706, longitude: -95.594628992671)
         let region = placePlacemark?.region as! RectangularRegion
-        XCTAssertEqualWithAccuracy(region.southWest.latitude, southWest.latitude, accuracy: 0.000000000001)
-        XCTAssertEqualWithAccuracy(region.southWest.longitude, southWest.longitude, accuracy: 0.000000000001)
-        XCTAssertEqualWithAccuracy(region.northEast.latitude, northEast.latitude, accuracy: 0.000000000001)
-        XCTAssertEqualWithAccuracy(region.northEast.longitude, northEast.longitude, accuracy: 0.000000000001)
+        XCTAssertEqual(region.southWest.latitude, southWest.latitude, accuracy: 0.000000000001)
+        XCTAssertEqual(region.southWest.longitude, southWest.longitude, accuracy: 0.000000000001)
+        XCTAssertEqual(region.northEast.latitude, northEast.latitude, accuracy: 0.000000000001)
+        XCTAssertEqual(region.northEast.longitude, northEast.longitude, accuracy: 0.000000000001)
+        
+        let encodedRegion = try! JSONEncoder().encode(region)
+        let decodedRegion = try! JSONDecoder().decode(RectangularRegion.self, from: encodedRegion)
+        
+        XCTAssertEqual(region, decodedRegion)
     }
 
     func testInvalidReverseGeocode() {
@@ -96,5 +104,38 @@ class ReverseGeocodingTests: XCTestCase {
             XCTAssertNil(error, "Error: \(error!)")
             XCTAssertEqual(task.state, URLSessionTask.State.completed)
         }
+    }
+    
+    func testAddressReverseGeocode() {
+        let expectation = self.expectation(description: "reverse geocode should return result with address scope")
+        
+        _ = stub(condition: isHost("api.mapbox.com")
+            && isPath("/geocoding/v5/mapbox.places/-95.78558,37.13284.json")
+            && containsQueryParams(["access_token": BogusToken])) { _ in
+                let path = Bundle(for: type(of: self)).path(forResource: "reverse_address", ofType: "json")
+                return OHHTTPStubsResponse(fileAtPath: path!, statusCode: 200, headers: ["Content-Type": "application/vnd.geo+json"])
+        }
+        
+        let geocoder = Geocoder(accessToken: BogusToken)
+        var addressPlacemark: GeocodedPlacemark?
+        let options = ReverseGeocodeOptions(location: CLLocation(latitude: 37.13284000, longitude: -95.78558000))
+        let task = geocoder.geocode(options) { (placemarks, attribution, error) in
+            addressPlacemark = placemarks?.first
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 1) { (error) in
+            XCTAssertNil(error, "Error: \(error!)")
+            XCTAssertEqual(task.state, URLSessionTask.State.completed)
+        }
+        
+        XCTAssertNotNil(task)
+        XCTAssert(addressPlacemark?.formattedName == "850 Eldorado Street", "Address not parsed correctly")
+        
+        let encodedData = try! JSONEncoder().encode(addressPlacemark!)
+        let decodedAddressPlacemark = try! JSONDecoder().decode(GeocodedPlacemark.self, from: encodedData)
+        
+        XCTAssertEqual(addressPlacemark?.name, decodedAddressPlacemark.name)
+        XCTAssertEqual(addressPlacemark?.formattedName, decodedAddressPlacemark.formattedName)
     }
 }

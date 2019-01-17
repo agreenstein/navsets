@@ -15,7 +15,10 @@ open class BottomBannerView: UIView {
     weak var distanceRemainingLabel: DistanceRemainingLabel!
     weak var arrivalTimeLabel: ArrivalTimeLabel!
     weak var cancelButton: CancelButton!
-    weak var dividerView: SeparatorView!
+    // Vertical divider between cancel button and the labels
+    weak var verticalDividerView: SeparatorView!
+    // Horizontal divider between the map view and the bottom banner
+    weak var horizontalDividerView: SeparatorView!
     weak var routeController: RouteController!
     weak var delegate: BottomBannerViewDelegate?
     
@@ -91,43 +94,8 @@ open class BottomBannerView: UIView {
         } else {
             timeRemainingLabel.text = dateComponentsFormatter.string(from: routeProgress.durationRemaining)
         }
-
-        let coordinatesLeftOnStepCount = Int(floor((Double(routeProgress.currentLegProgress.currentStepProgress.step.coordinateCount)) * routeProgress.currentLegProgress.currentStepProgress.fractionTraveled))
-
-        guard coordinatesLeftOnStepCount >= 0 else {
-            congestionLevel = .unknown
-            return
-        }
-
-        guard routeProgress.legIndex < routeProgress.congestionTravelTimesSegmentsByStep.count,
-            routeProgress.currentLegProgress.stepIndex < routeProgress.congestionTravelTimesSegmentsByStep[routeProgress.legIndex].count else { return }
-
-        let congestionTimesForStep = routeProgress.congestionTravelTimesSegmentsByStep[routeProgress.legIndex][routeProgress.currentLegProgress.stepIndex]
-        guard coordinatesLeftOnStepCount <= congestionTimesForStep.count else { return }
-
-        let remainingCongestionTimesForStep = congestionTimesForStep.suffix(from: coordinatesLeftOnStepCount)
-        let remainingCongestionTimesForRoute = routeProgress.congestionTimesPerStep[routeProgress.legIndex].suffix(from: routeProgress.currentLegProgress.stepIndex + 1)
-
-        var remainingStepCongestionTotals: [CongestionLevel: TimeInterval] = [:]
-        for stepValues in remainingCongestionTimesForRoute {
-            for (key, value) in stepValues {
-                remainingStepCongestionTotals[key] = (remainingStepCongestionTotals[key] ?? 0) + value
-            }
-        }
-
-        for (segmentCongestion, segmentTime) in remainingCongestionTimesForStep {
-            remainingStepCongestionTotals[segmentCongestion] = (remainingStepCongestionTotals[segmentCongestion] ?? 0) + segmentTime
-        }
-
-        // Update text color on time remaining based on congestion level
-        if routeProgress.durationRemaining < 60 {
-            congestionLevel = .unknown
-        } else {
-            if let max = remainingStepCongestionTotals.max(by: { a, b in a.value < b.value }) {
-                congestionLevel = max.key
-            } else {
-                congestionLevel = .unknown
-            }
-        }
+        
+        guard let congestionForRemainingLeg = routeProgress.averageCongestionLevelRemainingOnLeg else { return }
+        congestionLevel = congestionForRemainingLeg
     }
 }

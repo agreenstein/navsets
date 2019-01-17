@@ -7,25 +7,43 @@ extension UIImage {
     }
 }
 
-struct FeedbackItem {
-    var title: String
-    var image: UIImage
-    var feedbackType: FeedbackType
+/**
+ A single feedback item displayed on an instance of `FeedbackViewController`.
+ */
+@objc(MBFeedbackItem)
+public class FeedbackItem: NSObject {
+    /**
+     The title of feedback item. This will be rendered directly below the image.
+     */
+    @objc public var title: String
     
-    init(title: String, image: UIImage, feedbackType: FeedbackType) {
+    /**
+     An image representation of the feedback.
+     */
+    @objc public var image: UIImage
+    
+    /**
+     The type of feedback that best describes the event.
+     */
+    @objc public var feedbackType: FeedbackType
+    
+    /**
+     Creates a new `FeedbackItem`.
+     */
+    @objc public init(title: String, image: UIImage, feedbackType: FeedbackType) {
         self.title = title
         self.image = image
         self.feedbackType = feedbackType
     }
     
-    static let closure = FeedbackItem(title: closureTitle, image: .feedbackImage(named:"feedback-closed-road"), feedbackType: .roadClosed)
-    static let turnNotAllowed = FeedbackItem(title: notAllowedTitle, image:  .feedbackImage(named:"feedback-no-turn-allowed"), feedbackType: .notAllowed)
-    static let reportTraffic = FeedbackItem(title: reportTrafficTitle, image: .feedbackImage(named:"feedback-traffic"), feedbackType: .reportTraffic)
-    static let confusingInstructions = FeedbackItem(title: confusingInstructionTitle, image: .feedbackImage(named:"feedback-confusing-directions"), feedbackType: .confusingInstruction)
-    static let badRoute = FeedbackItem(title: badRouteTitle, image: .feedbackImage(named:"feedback-wrong-directions"), feedbackType: .routingError)
+    static let closure = FeedbackItem(title: closureTitle, image: .feedbackImage(named:"feedback_closed"), feedbackType: .roadClosed)
+    static let turnNotAllowed = FeedbackItem(title: notAllowedTitle, image:  .feedbackImage(named:"feedback_not_allowed"), feedbackType: .notAllowed)
+    static let reportTraffic = FeedbackItem(title: reportTrafficTitle, image: .feedbackImage(named:"feedback_traffic"), feedbackType: .reportTraffic)
+    static let confusingInstructions = FeedbackItem(title: confusingInstructionTitle, image: .feedbackImage(named:"feedback_confusing"), feedbackType: .confusingInstruction)
+    static let badRoute = FeedbackItem(title: badRouteTitle, image: .feedbackImage(named:"feedback_wrong"), feedbackType: .routingError)
     static let missingRoad = FeedbackItem(title: missingExitTitle, image: .feedbackImage(named:"feedback-missing-road"), feedbackType: .missingRoad)
     static let missingExit = FeedbackItem(title: missingRoadTitle, image: .feedbackImage(named:"feedback-exit"), feedbackType: .missingExit)
-    static let generalMapError = FeedbackItem(title: generalIssueTitle, image: .feedbackImage(named:"feedback-map-error"), feedbackType: .mapIssue)
+    static let generalMapError = FeedbackItem(title: generalIssueTitle, image: .feedbackImage(named:"feedback_map_issue"), feedbackType: .mapIssue)
 }
 
 fileprivate let closureTitle = NSLocalizedString("FEEDBACK_ROAD_CLOSURE", bundle: .mapboxNavigation, value: "Road\nClosed", comment: "Feedback type for Road Closed")

@@ -2,15 +2,12 @@ import Foundation
 import CoreLocation
 import MapboxDirections
 
+
+// MARK: - RouteController
 /**
  Maximum number of meters the user can travel away from step before `RouteControllerShouldReroute` is emitted.
  */
 public var RouteControllerMaximumDistanceBeforeRecalculating: CLLocationDistance = 50
-
-/**
- Accepted deviation excluding horizontal accuracy before the user is considered to be off route.
- */
-public var RouteControllerUserLocationSnappingDistance: CLLocationDistance = 15
 
 /**
  Threshold user must be in within to count as completing a step. One of two heuristics used to know when a user completes a step, see `RouteControllerManeuverZoneRadius`.
@@ -40,11 +37,6 @@ public var RouteControllerManeuverZoneRadius: CLLocationDistance = 40
 public var RouteControllerDeadReckoningTimeInterval: TimeInterval = 1.0
 
 /**
- Maximum angle the user puck will be rotated when snapping the user's course to the route line.
- */
-public var RouteControllerMaxManipulatedCourseAngle: CLLocationDirection = 25
-
-/**
  :nodoc This is used internally for debugging metrics
  */
 public var NavigationMetricsDebugLoggingEnabled = "MBNavigationMetricsDebugLoggingEnabled"
@@ -59,7 +51,7 @@ public let RouteControllerLinkedInstructionBufferMultiplier: Double = 1.2
 /**
  The minimum speed value before the user's actual location can be considered over the snapped location.
  */
-public var RouteControllerMinimumSpeedForLocationSnapping: CLLocationSpeed = 3
+public var RouteSnappingMinimumSpeed: CLLocationSpeed = 3
 
 /**
  The minimum distance threshold used for giving a "Continue" type instructions.
@@ -84,11 +76,89 @@ public var RouteControllerNumberOfSecondsForRerouteFeedback: TimeInterval = 10
 /**
  The number of seconds between attempts to automatically calculate a more optimal route while traveling.
  */
-public var RouteControllerOpportunisticReroutingInterval: TimeInterval = 120
+public var RouteControllerProactiveReroutingInterval: TimeInterval = 120
 
 let FasterRouteFoundEvent = "navigation.fasterRoute"
 
+//MARK: - Route Snapping (CLLocation)
 /**
- The number of seconds remaining on the final step of a leg before the user is considered "arrived".
+ Accepted deviation excluding horizontal accuracy before the user is considered to be off route.
  */
-public var RouteControllerDurationRemainingWaypointArrival: TimeInterval = 3
+public var RouteControllerUserLocationSnappingDistance: CLLocationDistance = 15
+
+/**
+ Maximum angle the user puck will be rotated when snapping the user's course to the route line.
+ */
+public var RouteSnappingMaxManipulatedCourseAngle: CLLocationDirection = 45
+
+/**
+ Minimum Accuracy (maximum deviation, in meters) that the route snapping engine will accept before it stops snapping.
+ */
+public var RouteSnappingMinimumHorizontalAccuracy: CLLocationAccuracy = 20.0
+
+/**
+ Minimum number of consecutive incorrect course updates before rerouting occurs.
+ */
+public var RouteControllerMinNumberOfInCorrectCourses: Int = 4
+
+/**
+ Given a location update, the `horizontalAccuracy` is used to figure out how many consective location updates to wait before rerouting due to consecutive incorrect course updates.
+ */
+public var RouteControllerIncorrectCourseMultiplier: Int = 4
+
+
+
+/**
+ When calculating the user's snapped location, this constant will be used for deciding upon which step coordinates to include in the calculation.
+ */
+public var RouteControllerMaximumSpeedForUsingCurrentStep: CLLocationSpeed = 1
+
+/**
+ Keys in the user info dictionaries of various notifications posted by instances
+ of `RouteController`.
+ */
+public typealias RouteControllerNotificationUserInfoKey = MBRouteControllerNotificationUserInfoKey
+
+extension Notification.Name {
+    /**
+     Posted when `RouteController` fails to reroute the user after the user diverges from the expected route.
+     
+     The user info dictionary contains the key `RouteControllerNotificationUserInfoKey.errorKey`.
+     */
+    public static let routeControllerDidFailToReroute = MBRouteControllerDidFailToReroute
+    
+    /**
+     Posted after the user diverges from the expected route, just before `RouteController` attempts to calculate a new route.
+     
+     The user info dictionary contains the key `RouteControllerNotificationUserInfoKey.locationKey`.
+     */
+    public static let routeControllerWillReroute = MBRouteControllerWillReroute
+    
+    /**
+     Posted when `RouteController` obtains a new route in response to the user diverging from a previous route.
+     
+     The user info dictionary contains the keys `RouteControllerNotificationUserInfoKey.locationKey` and `RouteControllerNotificationUserInfoKey.isProactiveKey`.
+     */
+    public static let routeControllerDidReroute = MBRouteControllerDidReroute
+    
+    /**
+     Posted when `RouteController` receives a user location update representing movement along the expected route.
+     
+     The user info dictionary contains the keys `RouteControllerNotificationUserInfoKey.routeProgressKey`, `RouteControllerNotificationUserInfoKey.locationKey`, and `RouteControllerNotificationUserInfoKey.rawLocationKey`.
+     */
+    public static let routeControllerProgressDidChange = MBRouteControllerProgressDidChange
+    
+    /**
+     Posted when `RouteController` detects that the user has passed an ideal point for saying an instruction aloud.
+     
+     The user info dictionary contains the key `RouteControllerNotificationUserInfoKey.routeProgressKey`.
+     */
+    public static let routeControllerDidPassSpokenInstructionPoint = MBRouteControllerDidPassSpokenInstructionPoint
+    
+    /**
+     Posted when `RouteController` detects that the user has passed an ideal point for displaying an instruction.
+     
+     The user info dictionary contains the key `RouteControllerNotificationUserInfoKey.routeProgressKey`.
+     */
+    public static let routeControllerDidPassVisualInstructionPoint = MBRouteControllerDidPassVisualInstructionPoint
+}

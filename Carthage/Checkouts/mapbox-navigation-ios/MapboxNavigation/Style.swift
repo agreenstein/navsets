@@ -29,12 +29,26 @@ open class Style: NSObject {
     /**
      Describes the situations in which the style should be used. By default, the style will be used during the daytime.
      */
-    @objc public var styleType: StyleType = .dayStyle
+    @objc public var styleType: StyleType = .day
     
     /**
-     Map style to be used for the style.
+     URL of the style to display on the map during turn-by-turn navigation.
      */
-    @objc open var mapStyleURL: URL = URL(string: "mapbox://styles/mapbox/navigation-guidance-day-v2")!
+    @objc open var mapStyleURL: URL = MGLStyle.navigationGuidanceDayStyleURL
+    
+    #if canImport(CarPlay)
+    /**
+     URL of the style to display on the map when previewing a route, for example on CarPlay.
+     */
+    @objc open var previewMapStyleURL = MGLStyle.navigationPreviewDayStyleURL
+    #else
+    /**
+     URL of the style to display on the map when previewing a route.
+     
+     This property is currently unused by default, but you can use it to present your own route preview map.
+     */
+    @objc open var previewMapStyleURL = MGLStyle.navigationPreviewDayStyleURL
+    #endif
     
     /**
      Applies the style for all changed properties.
@@ -62,16 +76,41 @@ open class DismissButton: Button { }
 /// :nodoc:
 @objc(MBFloatingButton)
 open class FloatingButton: Button {
+    
+    static let buttonSize = CGSize(width: 50, height: 50)
+    static let sizeConstraintPriority = UILayoutPriority(999.0) //Don't fight with the stack view (superview) when it tries to hide buttons.
+    
+    lazy var widthConstraint: NSLayoutConstraint = {
+        let constraint = self.widthAnchor.constraint(equalToConstant: FloatingButton.buttonSize.width)
+        constraint.priority = FloatingButton.sizeConstraintPriority
+        return constraint
+    }()
+    lazy var heightConstraint: NSLayoutConstraint = {
+        let constraint = self.heightAnchor.constraint(equalToConstant: FloatingButton.buttonSize.height)
+        constraint.priority = FloatingButton.sizeConstraintPriority
+        return constraint
+    }()
+        
     var constrainedSize: CGSize? {
         didSet {
             guard let size = constrainedSize else {
-                widthAnchor.constraint(equalToConstant: 0).isActive = false
-                heightAnchor.constraint(equalToConstant: 0).isActive = false
+                NSLayoutConstraint.deactivate([widthConstraint, heightConstraint])
                 return
             }
-            widthAnchor.constraint(equalToConstant: size.width).isActive = true
-            heightAnchor.constraint(equalToConstant: size.height).isActive = true
+            widthConstraint.constant = size.width
+            heightConstraint.constant = size.height
+            NSLayoutConstraint.activate([widthConstraint, heightConstraint])
         }
+    }
+    
+    class func rounded<T: FloatingButton>(image: UIImage, selectedImage: UIImage? = nil, size: CGSize = FloatingButton.buttonSize) -> T {
+        let button = T.init(type: .custom)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.constrainedSize = size
+        button.setImage(image, for: .normal)
+        if let selected = selectedImage { button.setImage(selected, for: .selected) }
+        button.applyDefaultCornerRadiusShadow(cornerRadius: size.width / 2)
+        return button
     }
 }
 
@@ -79,18 +118,34 @@ open class FloatingButton: Button {
 @objc(MBReportButton)
 public class ReportButton: Button {
     
-    let padding: CGFloat = 10
-    let downConstant: CGFloat = 10
+    static let padding: CGFloat = 10
+    static let downConstant: CGFloat = 10
+    static let defaultInsets: UIEdgeInsets = 10.0
+    static let defaultCornerRadius: CGFloat = 4.0
+    
+    public required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+        commonInit()
+    }
+    override public init(frame: CGRect) {
+        super.init(frame: frame)
+        commonInit()
+    }
+    
+    private func commonInit() {
+        contentEdgeInsets = ReportButton.defaultInsets
+        applyDefaultCornerRadiusShadow(cornerRadius: ReportButton.defaultCornerRadius)
+    }
     
     var upConstant: CGFloat {
-        return -bounds.height-(padding * 2)
+        return -bounds.height-(ReportButton.padding * 2)
     }
     
     func slideDown(constraint: NSLayoutConstraint, interval: TimeInterval) {
         guard isHidden == true else { return }
         
         isHidden = false
-        constraint.constant = downConstant
+        constraint.constant = ReportButton.downConstant
         setNeedsUpdateConstraints()
         UIView.defaultAnimation(0.5, animations: {
             self.superview?.layoutIfNeeded()
@@ -142,7 +197,7 @@ public class ResumeButton: UIControl {
         super.init(coder: aDecoder)
         commonInit()
     }
-    
+
     public override func prepareForInterfaceBuilder() {
         super.prepareForInterfaceBuilder()
         commonInit()
@@ -169,6 +224,38 @@ public class ResumeButton: UIControl {
 }
 
 /// :nodoc:
+@objc(MBDraggableView)
+open class StepListIndicatorView: UIView {
+    
+    // Workaround the fact that UIView properties are not marked with UI_APPEARANCE_SELECTOR
+    @objc dynamic open var gradientColors: [UIColor] = [.gray, .lightGray, .gray] {
+        didSet {
+            setNeedsLayout()
+        }
+    }
+    
+    fileprivate lazy var blurredEffectView: UIVisualEffectView = {
+        return UIVisualEffectView(effect: UIBlurEffect(style: .extraLight))
+    }()
+
+    override open func layoutSubviews() {
+        super.layoutSubviews()
+        layer.cornerRadius = bounds.midY
+        layer.masksToBounds = true
+        layer.opacity = 0.25
+        applyGradient(colors: gradientColors)
+        addBlurredEffect(view: blurredEffectView, to: self)
+    }
+    
+    fileprivate func addBlurredEffect(view: UIView, to parentView: UIView)  {
+        guard !view.isDescendant(of: parentView) else { return }
+        view.frame = parentView.bounds
+        parentView.addSubview(view)
+    }
+    
+}
+
+/// :nodoc:
 @objc(MBStylableLabel)
 open class StylableLabel: UILabel {
     // Workaround the fact that UILabel properties are not marked with UI_APPEARANCE_SELECTOR
@@ -181,6 +268,21 @@ open class StylableLabel: UILabel {
     @objc dynamic open var normalFont: UIFont = .systemFont(ofSize: 16) {
         didSet {
             font = normalFont
+        }
+    }
+}
+
+/// :nodoc
+@objc(MBStylableView)
+open class StylableView: UIView {
+    @objc dynamic var borderWidth: CGFloat = 0.0 {
+        didSet {
+            layer.borderWidth = borderWidth
+        }
+    }
+    @objc dynamic var cornerRadius: CGFloat = 0.0 {
+        didSet {
+            layer.cornerRadius = cornerRadius
         }
     }
 }
@@ -212,45 +314,53 @@ open class DistanceLabel: StylableLabel {
         didSet { update() }
     }
     
-    var valueRange: Range<String.Index>? {
-        didSet {
-            update()
-        }
-    }
-    
-    var unitRange: Range<String.Index>? {
-        didSet {
-            update()
-        }
-    }
-    
-    var distanceString: String? {
+    /**
+     An attributed string indicating the distance along with a unit.
+     
+     - precondition: `NSAttributedStringKey.quantity` should be applied to the
+        numeric quantity.
+     */
+    var attributedDistanceString: NSAttributedString? {
         didSet {
             update()
         }
     }
     
     fileprivate func update() {
-        guard let valueRange = valueRange, let unitRange = unitRange, let distanceString = distanceString else {
+        guard let attributedDistanceString = attributedDistanceString else {
             return
         }
-
-        let valueAttributes: [NSAttributedStringKey: Any] = [.foregroundColor: valueTextColor, .font: valueFont]
-        let unitAttributes: [NSAttributedStringKey: Any] = [.foregroundColor: unitTextColor, .font: unitFont]
-
-        let valueSubstring = distanceString[valueRange].trimmingCharacters(in: .whitespaces)
-        let unitSubstring = distanceString[unitRange].trimmingCharacters(in: .whitespaces)
-        let valueAttributedString = NSAttributedString(string: valueSubstring, attributes: valueAttributes)
-        let unitAttributedString = NSAttributedString(string: unitSubstring, attributes: unitAttributes)
-
-        let startsWithUnit = unitRange.lowerBound == distanceString.wholeRange.lowerBound
-        let attributedString = NSMutableAttributedString()
-
-        attributedString.append(startsWithUnit ? unitAttributedString : valueAttributedString)
-        attributedString.append(NSAttributedString(string: "\u{200A}", attributes: unitAttributes))
-        attributedString.append(startsWithUnit ? valueAttributedString : unitAttributedString)
-
-        attributedText = attributedString
+        
+        // Create a copy of the attributed string that emphasizes the quantity.
+        let emphasizedDistanceString = NSMutableAttributedString(attributedString: attributedDistanceString)
+        let wholeRange = NSRange(location: 0, length: emphasizedDistanceString.length)
+        var hasQuantity = false
+        emphasizedDistanceString.enumerateAttribute(.quantity, in: wholeRange, options: .longestEffectiveRangeNotRequired) { (value, range, stop) in
+            let foregroundColor: UIColor
+            let font: UIFont
+            if let _ = emphasizedDistanceString.attribute(NSAttributedStringKey.quantity, at: range.location, effectiveRange: nil) {
+                foregroundColor = valueTextColor
+                font = valueFont
+                hasQuantity = true
+            } else {
+                foregroundColor = unitTextColor
+                font = unitFont
+            }
+            emphasizedDistanceString.addAttributes([.foregroundColor: foregroundColor, .font: font], range: range)
+        }
+        
+        // As a failsafe, if no quantity was found, emphasize the entire string.
+        if !hasQuantity {
+            emphasizedDistanceString.addAttributes([.foregroundColor: valueTextColor, .font: valueFont], range: wholeRange)
+        }
+        
+        // Replace spaces with hair spaces to economize on horizontal screen
+        // real estate. Formatting the distance with a short style would remove
+        // spaces, but in English it would also denote feet with a prime
+        // mark (′), which is typically used for heights, not distances.
+        emphasizedDistanceString.mutableString.replaceOccurrences(of: " ", with: "\u{200A}", options: [], range: wholeRange)
+        
+        attributedText = emphasizedDistanceString
     }
 }
 
@@ -299,38 +409,56 @@ open class TitleLabel: StylableLabel { }
 open class SubtitleLabel: StylableLabel { }
 
 /// :nodoc:
-@objc(MBWayNameLabel)
-@IBDesignable
-open class WayNameLabel: StylableLabel {
+@objc(MBWayNameView)
+open class WayNameView: UIView {
     
-    /// :nodoc:
-    open var textInsets: UIEdgeInsets = UIEdgeInsets(top: 6, left: 14, bottom: 6, right: 14)
+    private static let textInsets = UIEdgeInsets(top: 6, left: 14, bottom: 6, right: 14)
     
-    open override var intrinsicContentSize: CGSize {
-        var size = super.intrinsicContentSize
-        size.height += textInsets.top + textInsets.bottom
-        size.width += textInsets.left + textInsets.right
-        return size
-    }
+    lazy var label: WayNameLabel = .forAutoLayout()
     
-    @objc dynamic public var borderColor: UIColor = .white {
-        didSet {
-            layer.borderColor = borderColor.cgColor
+    var text: String? {
+        get {
+            return label.text
+        }
+        set {
+            label.text = newValue
         }
     }
     
-    @objc open override var backgroundColor: UIColor? {
-        didSet {
-            setNeedsDisplay()
+    var attributedText: NSAttributedString? {
+        get {
+            return label.attributedText
+        }
+        set {
+            label.attributedText = newValue
         }
     }
     
-    override open func drawText(in rect: CGRect) {
-        backgroundColor?.setFill()
-        clipsToBounds = true
-        let ctx = UIGraphicsGetCurrentContext()
-        ctx?.fill(rect)
-        super.drawText(in: UIEdgeInsetsInsetRect(rect, textInsets))
+    @objc dynamic public var borderColor: UIColor? {
+        get {
+            guard let color = layer.borderColor else { return nil }
+            return UIColor(cgColor: color)
+        }
+        set {
+            layer.borderColor = newValue?.cgColor
+        }
+    }
+    
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
+        commonInit()
+    }
+    
+    public required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+        commonInit()
+    }
+    
+    
+    func commonInit() {
+        addSubview(label)
+        layoutMargins = WayNameView.textInsets
+        label.pinInSuperview(respectingMargins: true)
     }
     
     open override func layoutSubviews() {
@@ -338,6 +466,10 @@ open class WayNameLabel: StylableLabel {
         layer.cornerRadius = bounds.midY
     }
 }
+
+/// :nodoc:
+@objc(MBWayNameLabel)
+open class WayNameLabel: StylableLabel {}
 
 /// :nodoc:
 @objc(MBProgressBar)
@@ -362,17 +494,14 @@ public class ProgressBar: UIView {
         }
     }
     
-    func setProgress(_ progress: CGFloat, animated: Bool) {
-        UIView.defaultAnimation(0.5, animations: {
-            self.progress = progress
-        }, completion: nil)
+    override open var description: String {
+        return super.description + "; progress = \(progress)"
     }
     
-    func dock(on view: UIView) {
-        translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(self)
-        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|-0-[bar]-0-|", options: [], metrics: nil, views: ["bar": self]))
-        view.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:[bar(\(bounds.height))]-0-|", options: [], metrics: nil, views: ["bar": self]))
+    func setProgress(_ progress: CGFloat, animated: Bool) {
+        UIView.animate(withDuration: 0.5, delay: 0, options: .curveLinear, animations: {
+            self.progress = progress
+        }, completion: nil)
     }
     
     public override func layoutSubviews() {
@@ -387,7 +516,14 @@ public class ProgressBar: UIView {
     
     func updateProgressBar() {
         if let superview = superview {
-            bar.frame = CGRect(origin: .zero, size: CGSize(width: superview.bounds.width*progress, height: bounds.height))
+            let origin: CGPoint
+            switch UIApplication.shared.userInterfaceLayoutDirection {
+            case .leftToRight:
+                origin = .zero
+            case .rightToLeft:
+                origin = CGPoint(x: superview.bounds.width * (1 - progress), y: 0)
+            }
+            bar.frame = CGRect(origin: origin, size: CGSize(width: superview.bounds.width * progress, height: bounds.height))
         }
     }
 }
@@ -413,6 +549,7 @@ public class SeparatorView: UIView { }
 @objc(MBStylableButton)
 open class StylableButton: UIButton {
     
+
     // Sets the font on the button’s titleLabel
     @objc dynamic open var textFont: UIFont = UIFont.systemFont(ofSize: 20, weight: .medium) {
         didSet {
@@ -469,6 +606,9 @@ open class InstructionsBannerContentView: UIView { }
 /// :nodoc:
 @objc(MBBottomBannerContentView)
 open class BottomBannerContentView: UIView { }
+
+/// :nodoc:
+class NavigationAnnotation: MGLPointAnnotation { }
 
 /// :nodoc:
 @objc(MBMarkerView)

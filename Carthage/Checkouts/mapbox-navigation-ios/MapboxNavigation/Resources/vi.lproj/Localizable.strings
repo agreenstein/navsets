@@ -1,3 +1,66 @@
+/* Delimiter between lines in an address when displayed inline */
+"ADDRESS_LINE_SEPARATOR" = ", ";
+
+/* Title on arrival action sheet */
+"CARPLAY_ARRIVED" = "Đã đến nơi rồi";
+
+/* Message on arrival action sheet */
+"CARPLAY_ARRIVED_MESSAGE" = "Bạn muốn làm gì?";
+
+/* Title on continue button in CarPlay */
+"CARPLAY_CONTINUE" = "Đi tiếp";
+
+/* Name of the waypoint associated with the current location */
+"CARPLAY_CURRENT_LOCATION" = "Vị trí Hiện tại";
+
+/* Title for dismiss button */
+"CARPLAY_DISMISS" = "Bỏ qua";
+
+/* Title for end navigation button */
+"CARPLAY_END" = "Kết thúc";
+
+/* Title on the exit button in the arrival form */
+"CARPLAY_EXIT_NAVIGATION" = "Thoát Điều hướng";
+
+/* Title for feedback template in CarPlay */
+"CARPLAY_FEEDBACK" = "Phản hồi";
+
+/* Title for start button in CPTripPreviewTextConfiguration */
+"CARPLAY_GO" = "Đi";
+
+/* Title for alternative routes in CPTripPreviewTextConfiguration */
+"CARPLAY_MORE_ROUTES" = "Thêm Đường đi";
+
+/* Title for mute button */
+"CARPLAY_MUTE" = "Tắt Tiếng";
+
+/* CPNavigationAlert OK button title */
+"CARPLAY_OK" = "OK";
+
+/* Title for overview button in CPTripPreviewTextConfiguration */
+"CARPLAY_OVERVIEW" = "Tóm tắt";
+
+/* Title for rating template in CarPlay */
+"CARPLAY_RATE_RIDE" = "Đánh giá chuyến đi của bạn";
+
+/* Title on rate button in CarPlay */
+"CARPLAY_RATE_TRIP" = "Đánh giá chuyến đi của bạn";
+
+/* Message when search returned zero results in CarPlay */
+"CARPLAY_SEARCH_NO_RESULTS" = "Không tìm thấy kết quả";
+
+/* Title in search template when search is unimplemented */
+"CARPLAY_SEARCH_NOT_IMPLEMENTED" = "Không có chức năng tìm kiếm";
+
+/* Alert title that shows when feedback has been submitted */
+"CARPLAY_SUBMITTED_FEEDBACK" = "Đã gửi";
+
+/* Title for unmute button */
+"CARPLAY_UNMUTE" = "Bật Tiếng";
+
+/* Format string for indicating the device volume is low; 1 = device model */
+"DEVICE_VOLUME_LOW" = "Âm lượng %@ Đang Thấp";
+
 /* Dismiss button title on the steps view */
 "DISMISS_STEPS_TITLE" = "Đóng";
 
@@ -40,6 +103,12 @@
 /* Feedback type for Road Closed */
 "FEEDBACK_ROAD_CLOSURE" = "Đường\nĐóng cửa";
 
+/* Message confirming that the user has successfully sent feedback */
+"FEEDBACK_THANK_YOU" = "Cảm ơn bạn đã báo cáo!";
+
+/* Title of view controller for sending feedback */
+"FEEDBACK_TITLE" = "Báo cáo Vấn đề";
+
 /* Format for displaying the first two major ways */
 "LEG_MAJOR_WAYS_FORMAT" = "%1$@ và %2$@";
 
@@ -58,9 +127,6 @@
 /* Format for accessibility value of label indicating the existing rating; 1 = number of stars */
 "RATING_STARS_FORMAT" = "Đã đánh giá %ld sao.";
 
-/* Title on button that appears when a reroute occurs */
-"REROUTE_REPORT_TITLE" = "Báo cáo Vấn đề";
-
 /* Indicates that rerouting is in progress */
 "REROUTING" = "Đang tính tuyến mới…";
 
@@ -75,7 +141,4 @@
 
 /* Format for displaying start and endpoint for leg; 1 = source ; 2 = destination */
 "WAYPOINT_SOURCE_DESTINATION_FORMAT" = "%1$@ và %2$@";
-
-/* Inform user about weak GPS signal */
-"WEAK_GPS" = "Tín hiệu GPS yếu";
 

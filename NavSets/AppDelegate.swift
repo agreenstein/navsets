@@ -28,7 +28,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         config.requiredBillingAddressFields = .full
         config.appleMerchantIdentifier = "merchant.com.navsets"
         // Main API client configuration
-        MainAPIClient.sharedClient.baseURLString = baseURLString
+        StripeAPIClient.sharedClient.baseURLString = baseURLString
     }
     
     
@@ -40,7 +40,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Determine the view we should start with
         var firstLaunch = UserDefaults.standard.bool(forKey: "firstLaunch")
         // TEMPORARILY make firstLaunch always true so can view setup walkthrough screen
-        firstLaunch = true
+//        firstLaunch = true
         if firstLaunch  {
             print("First launch, setting UserDefault")
             initialViewController = storyboard.instantiateViewController(withIdentifier: "StartupViewController")

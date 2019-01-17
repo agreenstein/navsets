@@ -7,6 +7,7 @@
 #import "MMELocationManager.h"
 #import "MMEAPIClient.h"
 #import "MMETimerManager.h"
+#import "MMEDispatchManagerFake.h"
 #import "MMETimerManagerFake.h"
 #import "MMEAPIClientFake.h"
 #import "MMECommonEventData.h"
@@ -16,6 +17,7 @@
 
 using namespace Cedar::Matchers;
 using namespace Cedar::Doubles;
+using namespace Cedar::Doubles::Arguments;
 
 @interface MMEEventsManager (Tests) <MMELocationManagerDelegate>
 
@@ -27,6 +29,7 @@ using namespace Cedar::Doubles;
 @property (nonatomic) id<MMEAPIClient> apiClient;
 @property (nonatomic) id<MMEUniqueIdentifer> uniqueIdentifer;
 @property (nonatomic) MMETimerManager *timerManager;
+@property (nonatomic) MMEDispatchManager *dispatchManager;
 @property (nonatomic) NSDate *nextTurnstileSendDate;
 @property (nonatomic) MMENSDateWrapper *dateWrapper;
 @property (nonatomic) id<MMEUIApplicationWrapper> application;
@@ -57,21 +60,89 @@ describe(@"MMEEventsManager", ^{
     
     __block MMEEventsManager *eventsManager;
     __block MMENSDateWrapper *dateWrapper;
-    
+    __block MMEEventsConfiguration *configuration;
+    __block MMEDispatchManagerFake *dispatchManager;
+
     beforeEach(^{
         dateWrapper = [[MMENSDateWrapper alloc] init];
-        eventsManager = [MMEEventsManager sharedManager];
+        dispatchManager = [[MMEDispatchManagerFake alloc] init];
+        eventsManager = [[MMEEventsManager alloc] init];
+
+        eventsManager.dispatchManager = dispatchManager;
         eventsManager.locationManager = nice_fake_for(@protocol(MMELocationManager));
-        
+
         [eventsManager.eventQueue removeAllObjects];
-        
-        MMEEventsConfiguration *configuration = [[MMEEventsConfiguration alloc] init];
+
+        configuration = [[MMEEventsConfiguration alloc] init];
         configuration.eventFlushCountThreshold = 1000;
         eventsManager.configuration = configuration;
     });
-    
+
     it(@"sets common event data", ^{
         eventsManager.commonEventData should_not be_nil;
+    });
+
+    describe(@"-initializeWithAccessToken:userAgentBase:hostSDKVersion:", ^{
+        NSBundle *bundle = [NSBundle mainBundle];
+
+        beforeEach(^{
+            spy_on(bundle);
+        });
+
+        afterEach(^{
+            stop_spying_on(bundle);
+        });
+
+        context(@"when the custom events profile is set", ^{
+            beforeEach(^{
+                NSDictionary *infoDictionary = @{ @"MMEEventsProfile" : @"Custom" };
+                bundle stub_method(@selector(infoDictionary)).and_return(infoDictionary);
+
+                eventsManager = [[MMEEventsManager alloc] init];
+                eventsManager.dispatchManager = dispatchManager;
+
+                [eventsManager initializeWithAccessToken:@"foo" userAgentBase:@"bar" hostSDKVersion:@"baz"];
+            });
+
+            it(@"should schedule the initialization work with a 10 second delay", ^{
+                dispatchManager.delay should equal(10);
+            });
+        });
+
+        context(@"when no fancy value is set", ^{
+            beforeEach(^{
+                eventsManager = [[MMEEventsManager alloc] init];
+                eventsManager.dispatchManager = dispatchManager;
+
+                [eventsManager initializeWithAccessToken:@"foo" userAgentBase:@"bar" hostSDKVersion:@"baz"];
+            });
+
+            it(@"should schedule the initialization work without a delay", ^{
+                dispatchManager.delay should equal(0);
+            });
+        });
+    });
+
+    describe(@"- setConfiguration", ^{
+        beforeEach(^{
+            eventsManager.configuration = [MMEEventsConfiguration configuration];
+        });
+
+        it(@"should set the radius for configuration", ^{
+            eventsManager.configuration.locationManagerHibernationRadius should_not equal(0);
+        });
+        
+        it(@"should set the eventFlushCountThreshold", ^{
+            eventsManager.configuration.eventFlushCountThreshold should_not equal(0);
+        });
+        
+        it(@"should set the eventFlushSecondsThreshold", ^{
+            eventsManager.configuration.eventFlushSecondsThreshold should_not equal(0);
+        });
+        
+        it(@"should set the instanceIdentifierRotationTimeInterval", ^{
+            eventsManager.configuration.instanceIdentifierRotationTimeInterval should_not equal(0);
+        });
     });
     
     describe(@"- setAccessToken", ^{
@@ -231,7 +302,7 @@ describe(@"MMEEventsManager", ^{
                         });
                         
                         it(@"should tell it's delegate that a location event has been received", ^{
-                            eventsManager.delegate should have_received(@selector(locationManager:didUpdateLocations:)).with(eventsManager.locationManager).and_with(locations);
+                            eventsManager.delegate should have_received(@selector(eventsManager:didUpdateLocations:)).with(eventsManager).and_with(locations);
                         });
                         
                         it(@"tells the timer manager to start", ^{
@@ -703,6 +774,32 @@ describe(@"MMEEventsManager", ^{
                 });
             });
             
+            context(@"when a map download start event is pushed", ^{
+                beforeEach(^{
+                    [eventsManager enqueueEventWithName:MMEventTypeOfflineDownloadStart attributes:attributes];
+                });
+                
+                it(@"has the correct event", ^{
+                    MMEEvent *expectedEvent = [MMEEvent mapOfflineDownloadStartWithDateString:dateString attributes:attributes];
+                    MMEEvent *event = eventsManager.eventQueue.firstObject;
+                    
+                    event should equal(expectedEvent);
+                });
+            });
+            
+            context(@"when a map download complete event is pushed", ^{
+                beforeEach(^{
+                    [eventsManager enqueueEventWithName:MMEventTypeOfflineDownloadComplete attributes:attributes];
+                });
+                
+                it(@"has the correct event", ^{
+                    MMEEvent *expectedEvent = [MMEEvent mapOfflineDownloadCompleteWithDateString:dateString attributes:attributes];
+                    MMEEvent *event = eventsManager.eventQueue.firstObject;
+                    
+                    event should equal(expectedEvent);
+                });
+            });
+            
             context(@"when a navigation event is pushed", ^{
                 __block NSString * navigationEventName = @"navigation.*";
                 
@@ -712,6 +809,34 @@ describe(@"MMEEventsManager", ^{
                 
                 it(@"has the correct event", ^{
                     MMEEvent *expectedEvent = [MMEEvent navigationEventWithName:navigationEventName attributes:attributes];
+                    MMEEvent *event = eventsManager.eventQueue.firstObject;
+                    event should equal(expectedEvent);
+                });
+            });
+            
+            context(@"when a vision event is pushed", ^{
+                __block NSString * visionEventName = @"vision.*";
+                
+                beforeEach(^{
+                    [eventsManager enqueueEventWithName:visionEventName attributes:attributes];
+                });
+                
+                it(@"has the correct event", ^{
+                    MMEEvent *expectedEvent = [MMEEvent visionEventWithName:visionEventName attributes:attributes];
+                    MMEEvent *event = eventsManager.eventQueue.firstObject;
+                    event should equal(expectedEvent);
+                });
+            });
+            
+            context(@"when a search event is pushed", ^{
+                __block NSString * searchEventName = @"search.*";
+                
+                beforeEach(^{
+                    [eventsManager enqueueEventWithName:searchEventName attributes:attributes];
+                });
+                
+                it(@"has the correct event", ^{
+                    MMEEvent *expectedEvent = [MMEEvent searchEventWithName:searchEventName attributes:attributes];
                     MMEEvent *event = eventsManager.eventQueue.firstObject;
                     event should equal(expectedEvent);
                 });
@@ -776,11 +901,60 @@ describe(@"MMEEventsManager", ^{
                     [eventsManager enqueueEventWithName:MMEEventTypeMapLoad];
                 });
                 
-                it(@"has no event", ^{
-                    eventsManager.eventQueue.count should equal(0);
+                it(@"should queue events", ^{
+                    eventsManager.eventQueue.count should equal(1);
                 });
             });
         });
+    });
+    
+    describe(@"MMELocationManagerDelegate", ^{
+        
+        context(@"-[MMEEventsManager locatizonManager:didVisit:]", ^{
+            __block CLVisit *visit;
+            
+            beforeEach(^{
+                eventsManager.delegate = nice_fake_for(@protocol(MMEEventsManagerDelegate));
+                eventsManager.paused = NO;
+                
+                visit = [[CLVisit alloc] init];
+                spy_on(visit);
+                
+                CLLocationCoordinate2D coordinate = {10.0, -10.0};
+                NSDate *date = [NSDate dateWithTimeIntervalSince1970:0];
+                
+                visit stub_method(@selector(coordinate)).and_return(coordinate);
+                visit stub_method(@selector(arrivalDate)).and_return(date);
+                visit stub_method(@selector(departureDate)).and_return(date);
+                visit stub_method(@selector(horizontalAccuracy)).and_return(42.0);
+                
+                [eventsManager locationManager:eventsManager.locationManager didVisit:visit];
+            });
+            
+            it(@"enqueues the correct event", ^{
+                CLLocation *location = [[CLLocation alloc] initWithLatitude:visit.coordinate.latitude longitude:visit.coordinate.longitude];
+                NSDictionary *attributes = @{MMEEventKeyCreated: [eventsManager.dateWrapper formattedDateStringForDate:[location timestamp]],
+                                             MMEEventKeyLatitude: @([location mme_latitudeRoundedWithPrecision:7]),
+                                             MMEEventKeyLongitude: @([location mme_longitudeRoundedWithPrecision:7]),
+                                             MMEEventHorizontalAccuracy: @(visit.horizontalAccuracy),
+                                             MMEEventKeyArrivalDate: [eventsManager.dateWrapper formattedDateStringForDate:visit.arrivalDate],
+                                             MMEEventKeyDepartureDate: [eventsManager.dateWrapper formattedDateStringForDate:visit.departureDate]};
+                MMEEvent *expectedVisitEvent = [MMEEvent visitEventWithAttributes:attributes];
+                MMEEvent *enqueueEvent = eventsManager.eventQueue.firstObject;
+                
+                NSMutableDictionary *tempDict = [[NSMutableDictionary alloc] init];
+                [tempDict addEntriesFromDictionary:enqueueEvent.attributes];
+                [tempDict setObject:[eventsManager.dateWrapper formattedDateStringForDate:[location timestamp]] forKey:@"created"];
+                enqueueEvent.attributes = tempDict;
+                
+                enqueueEvent should equal(expectedVisitEvent);
+            });
+            
+            it(@"tells its delegate", ^{
+                eventsManager.delegate should have_received(@selector(eventsManager:didVisit:)).with(eventsManager, visit);
+            });
+        });
+        
     });
 });
 

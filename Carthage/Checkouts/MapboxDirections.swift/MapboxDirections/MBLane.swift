@@ -10,7 +10,10 @@ public class Lane: NSObject, NSSecureCoding {
      */
     @objc public let indications: LaneIndication
     
-    internal init(indications: LaneIndication) {
+    /**
+     Initializes a new `Lane` using the given lane indications.
+     */
+    @objc public init(indications: LaneIndication) {
         self.indications = indications
     }
     
@@ -28,7 +31,7 @@ public class Lane: NSObject, NSSecureCoding {
         self.indications = indications
     }
     
-    open static var supportsSecureCoding = true
+    public static var supportsSecureCoding = true
     
     public func encode(with coder: NSCoder) {
         coder.encode(indications.description.components(separatedBy: ","), forKey: "indications")

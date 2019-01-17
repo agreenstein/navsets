@@ -1,128 +1,120 @@
 import Foundation
 
 /**
- :nodoc:
- Encompasses all information necessary for creating a visual cue about a given `RouteStep`.
+ The contents of a banner that should be displayed as added visual guidance for a route. The banner instructions are children of the steps during which they should be displayed, but they refer to the maneuver in the following step.
  */
 @objc(MBVisualInstruction)
 open class VisualInstruction: NSObject, NSSecureCoding {
     
-    /**
-     :nodoc:
-     Distance in meters from the beginning of the step at which the visual instruction should be visible.
-     */
-    @objc public let distanceAlongStep: CLLocationDistance
+    public static var supportsSecureCoding = true
     
     /**
-     :nodoc:
-     A plain text representation of `primaryTextComponents`.
+     A plain text representation of the instruction.
      */
-    @objc public let primaryText: String
-
+    @objc public let text: String?
+    
     /**
-     :nodoc:
-     Most important visual content to convey to the user about the `RouteStep`.
+     The type of maneuver required for beginning the step described by the visual instruction.
+     */
+    @objc public var maneuverType: ManeuverType
+    
+    /**
+     Additional directional information to clarify the maneuver type.
+     */
+    @objc public var maneuverDirection: ManeuverDirection
+    
+    /**
+     A structured representation of the instruction.
+     */
+    @objc public let components: [ComponentRepresentable]
+    
+    /**
+     The heading at which the user exits a roundabout (traffic circle or rotary).
      
-     This is the structured representation of `primaryText`.
-     */
-    @objc public let primaryTextComponents: [VisualInstructionComponent]
-    
-    /**
-     :nodoc:
-     A plain text representation of `secondaryTextComponents`.
-     */
-    @objc public let secondaryText: String?
-    
-    /**
-     :nodoc:
-     Ancillary visual information about the `RouteStep`.
+     This property is measured in degrees clockwise relative to the user’s initial heading. A value of 180° means continuing through the roundabout without changing course, whereas a value of 0° means traversing the entire roundabout back to the entry point.
      
-     This is the structured representation of `secondaryText`.
+     This property is only relevant if the `maneuverType` is any of the following values: `ManeuverType.takeRoundabout`, `ManeuverType.takeRotary`, `ManeuverType.turnAtRoundabout`, `ManeuverType.exitRoundabout`, or `ManeuverType.exitRotary`.
      */
-    @objc public let secondaryTextComponents: [VisualInstructionComponent]?
-    
-    
-    /**
-     :nodoc:
-     Indicates what side of a bidirectional road the driver must be driving on. Also referred to as the rule of the road.
-     */
-    @objc public var drivingSide: DrivingSide
+    @objc public var finalHeading: CLLocationDegrees = 180
     
     /**
-     :nodoc:
-     Initialize a `VisualInstruction` from a dictionary given a `DrivingSide`.
+     Initializes a new visual instruction banner object that displays the given information.
      */
-    @objc public convenience init(json: [String: Any], drivingSide: DrivingSide) {
-        let distanceAlongStep = json["distanceAlongGeometry"] as! CLLocationDistance
+    @objc public init(text: String?, maneuverType: ManeuverType, maneuverDirection: ManeuverDirection, components: [ComponentRepresentable], degrees: CLLocationDegrees = 180) {
+        self.text = text
+        self.maneuverType = maneuverType
+        self.maneuverDirection = maneuverDirection
+        self.components = components
+        self.finalHeading = degrees
+    }
+    
+    /**
+     Initializes a new visual instruction object based on the given JSON dictionary representation.
+     
+     - parameter json: A JSON object that conforms to the [banner instruction](https://www.mapbox.com/api-documentation/#banner-instruction-object) format described in the Directions API documentation.
+     */
+    @objc(initWithJSON:)
+    public convenience init(json: [String: Any]) {
+        let text = json["text"] as? String
+        var components = [ComponentRepresentable]()
         
-        let primaryTextComponent = json["primary"] as! JSONDictionary
-        let primaryText = primaryTextComponent["text"] as! String
-        let primaryManeuverType = ManeuverType(description: primaryTextComponent["type"] as! String) ?? .none
-        let primaryManeuverDirection = ManeuverDirection(description: primaryTextComponent["modifier"] as! String)  ?? .none
-        let primaryTextComponents = (primaryTextComponent["components"] as! [JSONDictionary]).map {
-            VisualInstructionComponent(maneuverType: primaryManeuverType, maneuverDirection: primaryManeuverDirection, json: $0)
+        var maneuverType: ManeuverType = .none
+        if let type = json["type"] as? String, let derivedType = ManeuverType(description: type) {
+            maneuverType = derivedType
         }
         
-        var secondaryText: String?
-        var secondaryTextComponents: [VisualInstructionComponent]?
-        if let secondaryTextComponent = json["secondary"] as? JSONDictionary {
-            secondaryText = secondaryTextComponent["text"] as? String
-            let secondaryManeuverType = ManeuverType(description: secondaryTextComponent["type"] as! String) ?? .none
-            let secondaryManeuverDirection = ManeuverDirection(description: secondaryTextComponent["modifier"] as! String)  ?? .none
-            secondaryTextComponents = (secondaryTextComponent["components"] as! [JSONDictionary]).map {
-                VisualInstructionComponent(maneuverType: secondaryManeuverType, maneuverDirection: secondaryManeuverDirection, json: $0)
+        var maneuverDirection: ManeuverDirection = .none
+        if let modifier = json["modifier"] as? String,
+            let derivedDirection = ManeuverDirection(description: modifier) {
+            maneuverDirection = derivedDirection
+        }
+        
+        if let dictionary = json["components"] as? [JSONDictionary] {
+            if let firstComponent = dictionary.first, let type = firstComponent["type"] as? String, type.lowercased() == "lane" {
+                components = dictionary.map { record in
+                    let indications = LaneIndication(descriptions: record["directions"] as? [String] ?? []) ?? LaneIndication()
+                    let isUsable = record["active"] as? Bool ?? false
+                    return LaneIndicationComponent(indications: indications, isUsable: isUsable)
+                }
+            } else {
+                components = dictionary.map(VisualInstructionComponent.init(json:))
             }
         }
         
-        self.init(distanceAlongStep: distanceAlongStep, primaryText: primaryText, primaryTextComponents: primaryTextComponents, secondaryText: secondaryText, secondaryTextComponents: secondaryTextComponents, drivingSide: drivingSide)
-    }
-    
-    /**
-     :nodoc:
-     Initialize a `VisualInstruction`.
-     */
-    @objc public init(distanceAlongStep: CLLocationDistance, primaryText: String, primaryTextComponents: [VisualInstructionComponent], secondaryText: String?, secondaryTextComponents: [VisualInstructionComponent]?, drivingSide: DrivingSide) {
-        self.distanceAlongStep = distanceAlongStep
-        self.primaryText = primaryText
-        self.primaryTextComponents = primaryTextComponents
-        self.secondaryText = secondaryText
-        self.secondaryTextComponents = secondaryTextComponents
-        self.drivingSide = drivingSide
-    }
-    
-    public required init?(coder decoder: NSCoder) {
-        distanceAlongStep = decoder.decodeDouble(forKey: "distanceAlongStep")
+        let degrees = json["degrees"] as? CLLocationDegrees ?? 180
         
-        guard let primaryText = decoder.decodeObject(of: NSString.self, forKey: "primaryText") as String? else {
+        self.init(text: text, maneuverType: maneuverType, maneuverDirection: maneuverDirection, components: components, degrees: degrees)
+    }
+    
+    @objc public required init?(coder decoder: NSCoder) {
+        guard let text = decoder.decodeObject(of: NSString.self, forKey: "text") as String? else {
             return nil
         }
-        self.primaryText = primaryText
+        self.text = text
         
-        primaryTextComponents = decoder.decodeObject(of: [NSArray.self, VisualInstructionComponent.self], forKey: "primaryTextComponents") as? [VisualInstructionComponent] ?? []
-        
-        guard let secondaryText = decoder.decodeObject(of: NSString.self, forKey: "primarysecondaryTextText") as String? else {
+        guard let maneuverTypeString = decoder.decodeObject(of: NSString.self, forKey: "maneuverType") as String?, let maneuverType = ManeuverType(description: maneuverTypeString) else {
             return nil
         }
-        self.secondaryText = secondaryText
+        self.maneuverType = maneuverType
         
-        secondaryTextComponents = decoder.decodeObject(of: [NSArray.self, VisualInstructionComponent.self], forKey: "primaryTextComponents") as? [VisualInstructionComponent]
-        
-        
-        if let drivingSideDescription = decoder.decodeObject(of: NSString.self, forKey: "drivingSide") as String?, let drivingSide = DrivingSide(description: drivingSideDescription) {
-            self.drivingSide = drivingSide
-        } else {
-            self.drivingSide = .right
+        guard let direction = decoder.decodeObject(of: NSString.self, forKey: "maneuverDirection") as String?, let maneuverDirection = ManeuverDirection(description: direction) else {
+            return nil
         }
+        self.maneuverDirection = maneuverDirection
+        
+        guard let components = decoder.decodeObject(of: [NSArray.self, VisualInstructionComponent.self], forKey: "components") as? [VisualInstructionComponent] else {
+            return nil
+        }
+        self.components = components
+        
+        self.finalHeading = decoder.decodeDouble(forKey: "degrees")
     }
-    
-    open static var supportsSecureCoding = true
     
     public func encode(with coder: NSCoder) {
-        coder.encode(distanceAlongStep, forKey: "distanceAlongStep")
-        coder.encode(primaryText, forKey: "primaryText")
-        coder.encode(primaryTextComponents, forKey: "primaryTextComponents")
-        coder.encode(secondaryText, forKey: "secondaryText")
-        coder.encode(secondaryTextComponents, forKey: "secondaryTextComponents")
-        coder.encode(drivingSide, forKey: "drivingSide")
+        coder.encode(text, forKey: "text")
+        coder.encode(maneuverType, forKey: "maneuverType")
+        coder.encode(maneuverDirection, forKey: "maneuverDirection")
+        coder.encode(finalHeading, forKey: "degrees")
+        coder.encode(components, forKey: "components")
     }
 }

@@ -9,6 +9,6 @@
 #ifndef NavSets_Bridging_Header_h
 #define NavSets_Bridging_Header_h
 
-#import <Stripe/Stripe.h>
+//#import </Stripe/Stripe.h>
 
 #endif /* NavSets_Bridging_Header_h */

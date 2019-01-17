@@ -160,8 +160,10 @@ static const NSString *kTSKKeychainPublicKeyTag = @"TSKKeychainPublicKeyTag"; //
     // Have we seen this certificate before? Look for the SPKI in the cache
     NSData *certificateData = (__bridge_transfer NSData *)(SecCertificateCopyData(certificate));
     
+    __weak __typeof__(self) weakSelf = self;
     dispatch_sync(_lockQueue, ^{
-        cachedSubjectPublicKeyInfo = _subjectPublicKeyInfoHashesCache[algorithmKey][certificateData];
+        __strong __typeof__(weakSelf) strongSelf = weakSelf;
+        cachedSubjectPublicKeyInfo = strongSelf.subjectPublicKeyInfoHashesCache[algorithmKey][certificateData];
     });
     
     if (cachedSubjectPublicKeyInfo)
@@ -197,7 +199,8 @@ static const NSString *kTSKKeychainPublicKeyTag = @"TSKKeychainPublicKeyTag"; //
     
     // Store the hash in our memory cache
     dispatch_barrier_sync(_lockQueue, ^{
-        _subjectPublicKeyInfoHashesCache[algorithmKey][certificateData] = subjectPublicKeyInfoHash;
+        __strong __typeof__(weakSelf) strongSelf = weakSelf;
+        strongSelf.subjectPublicKeyInfoHashesCache[algorithmKey][certificateData] = subjectPublicKeyInfoHash;
     });
     
     // Update the cache on the filesystem
@@ -300,7 +303,8 @@ static const NSString *kTSKKeychainPublicKeyTag = @"TSKKeychainPublicKeyTag"; //
     SecTrustCreateWithCertificates(certificate, policy, &trust);
     
     // Get a public key reference for the certificate from the trust
-    SecTrustEvaluate(trust, NULL);
+    SecTrustResultType result;
+    SecTrustEvaluate(trust, &result);
     SecKeyRef publicKey = SecTrustCopyPublicKey(trust);
     CFRelease(policy);
     CFRelease(trust);
@@ -336,7 +340,8 @@ static const NSString *kTSKKeychainPublicKeyTag = @"TSKKeychainPublicKeyTag"; //
     
     // Get a public key reference from the certificate
     SecTrustCreateWithCertificates(certificate, policy, &tempTrust);
-    SecTrustEvaluate(tempTrust, NULL);
+    SecTrustResultType result;
+    SecTrustEvaluate(tempTrust, &result);
     publicKey = SecTrustCopyPublicKey(tempTrust);
     CFRelease(policy);
     CFRelease(tempTrust);

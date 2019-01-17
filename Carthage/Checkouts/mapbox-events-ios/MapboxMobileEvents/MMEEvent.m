@@ -30,6 +30,16 @@
     return locationEvent;
 }
 
++ (instancetype)visitEventWithAttributes:(NSDictionary *)attributes {
+    MMEEvent *visitEvent = [[MMEEvent alloc] init];
+    visitEvent.name = MMEEventTypeVisit;
+    NSMutableDictionary *commonAttributes = [NSMutableDictionary dictionary];
+    commonAttributes[MMEEventKeyEvent] = visitEvent.name;
+    [commonAttributes addEntriesFromDictionary:attributes];
+    visitEvent.attributes = commonAttributes;
+    return visitEvent;
+}
+
 + (instancetype)mapLoadEventWithDateString:(NSString *)dateString commonEventData:(MMECommonEventData *)commonEventData; {
     MMEEvent *mapLoadEvent = [[MMEEvent alloc] init];
     mapLoadEvent.name = MMEEventTypeMapLoad;
@@ -73,6 +83,28 @@
     return mapTapEvent;
 }
 
++ (instancetype)mapOfflineDownloadStartWithDateString:(NSString *)dateString attributes:(NSDictionary *)attributes {
+    MMEEvent *mapOfflineDownloadEvent = [[MMEEvent alloc] init];
+    mapOfflineDownloadEvent.name = MMEventTypeOfflineDownloadStart;
+    NSMutableDictionary *commonAttributes = [NSMutableDictionary dictionary];
+    commonAttributes[MMEEventKeyEvent] = mapOfflineDownloadEvent.name;
+    commonAttributes[MMEEventKeyCreated] = dateString;
+    [commonAttributes addEntriesFromDictionary:attributes];
+    mapOfflineDownloadEvent.attributes = commonAttributes;
+    return mapOfflineDownloadEvent;
+}
+
++ (instancetype)mapOfflineDownloadCompleteWithDateString:(NSString *)dateString attributes:(NSDictionary *)attributes {
+    MMEEvent *mapOfflineDownloadEvent = [[MMEEvent alloc] init];
+    mapOfflineDownloadEvent.name = MMEventTypeOfflineDownloadComplete;
+    NSMutableDictionary *commonAttributes = [NSMutableDictionary dictionary];
+    commonAttributes[MMEEventKeyEvent] = mapOfflineDownloadEvent.name;
+    commonAttributes[MMEEventKeyCreated] = dateString;
+    [commonAttributes addEntriesFromDictionary:attributes];
+    mapOfflineDownloadEvent.attributes = commonAttributes;
+    return mapOfflineDownloadEvent;
+}
+
 + (instancetype)navigationEventWithName:(NSString *)name attributes:(NSDictionary *)attributes {
     MMEEvent *navigationEvent = [[MMEEvent alloc] init];
     navigationEvent.name = name;
@@ -80,11 +112,41 @@
     return navigationEvent;
 }
 
++ (instancetype)visionEventWithName:(NSString *)name attributes:(NSDictionary *)attributes {
+    MMEEvent *visionEvent = [[MMEEvent alloc] init];
+    visionEvent.name = name;
+    NSMutableDictionary *commonAttributes = [NSMutableDictionary dictionary];
+    commonAttributes[MMEEventKeyEvent] = visionEvent.name;
+    [commonAttributes addEntriesFromDictionary:attributes];
+    visionEvent.attributes = commonAttributes;
+    return visionEvent;
+}
+
 + (instancetype)debugEventWithAttributes:(NSDictionary *)attributes {
     MMEEvent *debugEvent = [[MMEEvent alloc] init];
     debugEvent.name = MMEEventTypeLocalDebug;
     debugEvent.attributes = [attributes copy];
     return debugEvent;
+}
+
++ (instancetype)searchEventWithName:(NSString *)name attributes:(NSDictionary *)attributes {
+    MMEEvent *searchEvent = [[MMEEvent alloc] init];
+    searchEvent.name = name;
+    NSMutableDictionary *commonAttributes = [NSMutableDictionary dictionary];
+    commonAttributes[MMEEventKeyEvent] = searchEvent.name;
+    [commonAttributes addEntriesFromDictionary:attributes];
+    searchEvent.attributes = commonAttributes;
+    return searchEvent;
+}
+
++ (instancetype)carplayEventWithName:(NSString *)name attributes:(NSDictionary *)attributes {
+    MMEEvent *carplayEvent = [[MMEEvent alloc] init];
+    carplayEvent.name = name;
+    NSMutableDictionary *commonAttributes = [NSMutableDictionary dictionary];
+    commonAttributes[MMEEventKeyEvent] = carplayEvent.name;
+    [commonAttributes addEntriesFromDictionary:attributes];
+    carplayEvent.attributes = commonAttributes;
+    return carplayEvent;
 }
 
 + (NSInteger)contentSizeScale {

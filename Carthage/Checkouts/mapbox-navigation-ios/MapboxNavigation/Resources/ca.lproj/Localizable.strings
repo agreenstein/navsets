@@ -28,6 +28,9 @@
 /* Feedback type for Closure */
 "FEEDBACK_ROAD_CLOSURE" = "Carretera\ntancada";
 
+/* Message confirming that the user has successfully sent feedback */
+"FEEDBACK_THANK_YOU" = "Gràcies pel vostre informe!";
+
 /* Format for displaying the first two major ways */
 "LEG_MAJOR_WAYS_FORMAT" = "%1$@ i %2$@";
 
@@ -48,7 +51,3 @@
 
 /* Format for displaying start and endpoint for leg; 1 = source ; 2 = destination */
 "WAYPOINT_SOURCE_DESTINATION_FORMAT" = "%1$@ i %2$@";
-
-/* Inform user about weak GPS signal */
-"WEAK_GPS" = "Senyal GPS dèbil";
-

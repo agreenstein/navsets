@@ -1,12 +1,19 @@
 #import <Foundation/Foundation.h>
 
 extern NSString * const MMEAPIClientBaseURL;
+extern NSString * const MMEAPIClientBaseAPIURL;
+extern NSString * const MMEAPIClientBaseChinaEventsURL;
+extern NSString * const MMEAPIClientBaseChinaAPIURL;
 extern NSString * const MMEAPIClientEventsPath;
+extern NSString * const MMEAPIClientEventsConfigPath;
+extern NSString * const MMEAPIClientAttachmentsPath;
 extern NSString * const MMEAPIClientHeaderFieldUserAgentKey;
 extern NSString * const MMEAPIClientHeaderFieldContentTypeKey;
 extern NSString * const MMEAPIClientHeaderFieldContentTypeValue;
+extern NSString * const MMEAPIClientAttachmentsHeaderFieldContentTypeValue;
 extern NSString * const MMEAPIClientHeaderFieldContentEncodingKey;
 extern NSString * const MMEAPIClientHTTPMethodPost;
+extern NSString * const MMEAPIClientHTTPMethodGet;
 extern NSString * const MMEErrorDomain;
 
 // Debug types
@@ -26,7 +33,10 @@ extern NSString * const MMEEventTypeMapLoad;
 extern NSString * const MMEEventTypeMapTap;
 extern NSString * const MMEEventTypeMapDragEnd;
 extern NSString * const MMEEventTypeLocation;
+extern NSString * const MMEEventTypeVisit;
 extern NSString * const MMEEventTypeLocalDebug;
+extern NSString * const MMEventTypeOfflineDownloadStart;
+extern NSString * const MMEventTypeOfflineDownloadComplete;
 
 // Gestures
 extern NSString * const MMEEventGestureSingleTap;
@@ -39,6 +49,8 @@ extern NSString * const MMEEventGestureRotateStart;
 extern NSString * const MMEEventGesturePitchStart;
 
 // Event keys
+extern NSString * const MMEEventKeyArrivalDate;
+extern NSString * const MMEEventKeyDepartureDate;
 extern NSString * const MMEEventKeyLatitude;
 extern NSString * const MMEEventKeyLongitude;
 extern NSString * const MMEEventKeyZoomLevel;
@@ -64,12 +76,18 @@ extern NSString * const MMEEventSDKIdentifier;
 extern NSString * const MMEEventSDKVersion;
 extern NSString * const MMEEventKeyLocalDebugDescription;
 extern NSString * const MMENavigationEventPrefix;
+extern NSString * const MMEVisionEventPrefix;
 extern NSString * const MMEEventTypeNavigationDepart;
 extern NSString * const MMEEventTypeNavigationArrive;
 extern NSString * const MMEEventTypeNavigationCancel;
 extern NSString * const MMEEventTypeNavigationFeedback;
 extern NSString * const MMEEventTypeNavigationReroute;
+extern NSString * const MMEventTypeNavigationCarplayConnect;
+extern NSString * const MMEventTypeNavigationCarplayDisconnect;
 extern NSString * const MMEDebugEventType;
+extern NSString * const MMEEventTypeSearchSelected;
+extern NSString * const MMEEventTypeSearchFeedback;
+extern NSString * const MMESearchEventPrefix;
 
 // SDK event source
 extern NSString * const MMEEventSource;

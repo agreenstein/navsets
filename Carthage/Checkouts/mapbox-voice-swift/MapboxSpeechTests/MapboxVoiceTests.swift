@@ -38,6 +38,7 @@ class MapboxVoiceTests: XCTestCase {
         let options = SpeechOptions(text: "hello")
         options.outputFormat = .mp3
         options.speechGender = .female
+        options.locale = Locale(identifier: "en_US")
         
         var audio: Data?
         let task = voice.audioData(with: options) { (data: Data?, error: NSError?) in
@@ -54,5 +55,23 @@ class MapboxVoiceTests: XCTestCase {
         }
         
         XCTAssertNotNil(audio)
+    }
+    
+    func testCoding() {
+        let options = SpeechOptions(ssml:
+            """
+            <speak><amazon:effect name="drc"><prosody rate="1.08">TEXT</prosody></amazon:effect></speak>
+            """
+        )
+        options.outputFormat = .mp3
+        options.speechGender = .female
+        
+        let encoded = try! JSONEncoder().encode(options)
+        let decodedOptions = try! JSONDecoder().decode(SpeechOptions.self, from: encoded)
+        
+        XCTAssert(options.outputFormat == decodedOptions.outputFormat)
+        XCTAssert(options.speechGender == decodedOptions.speechGender)
+        XCTAssert(options.textType == decodedOptions.textType)
+        XCTAssert(options.text == decodedOptions.text)
     }
 }

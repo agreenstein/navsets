@@ -1,12 +1,19 @@
 #import "MMEConstants.h"
 
 NSString * const MMEAPIClientBaseURL = @"https://events.mapbox.com";
+NSString * const MMEAPIClientBaseAPIURL = @"https://api.mapbox.com";
+NSString * const MMEAPIClientBaseChinaEventsURL = @"https://events.mapbox.cn";
+NSString * const MMEAPIClientBaseChinaAPIURL = @"https://api.mapbox.cn"; 
 NSString * const MMEAPIClientEventsPath = @"events/v2";
+NSString * const MMEAPIClientEventsConfigPath = @"events-config";
+NSString * const MMEAPIClientAttachmentsPath = @"attachments/v1";
 NSString * const MMEAPIClientHeaderFieldUserAgentKey = @"User-Agent";
 NSString * const MMEAPIClientHeaderFieldContentTypeKey = @"Content-Type";
 NSString * const MMEAPIClientHeaderFieldContentTypeValue = @"application/json";
+NSString * const MMEAPIClientAttachmentsHeaderFieldContentTypeValue = @"multipart/form-data";
 NSString * const MMEAPIClientHeaderFieldContentEncodingKey = @"Content-Encoding";
 NSString * const MMEAPIClientHTTPMethodPost = @"POST";
+NSString * const MMEAPIClientHTTPMethodGet = @"GET";
 NSString * const MMEErrorDomain = @"MMEErrorDomain";
 
 NSString * const MMEDebugEventTypeFlush = @"flush";
@@ -24,7 +31,10 @@ NSString * const MMEEventTypeMapLoad = @"map.load";
 NSString * const MMEEventTypeMapTap = @"map.click";
 NSString * const MMEEventTypeMapDragEnd = @"map.dragend";
 NSString * const MMEEventTypeLocation = @"location";
+NSString * const MMEEventTypeVisit = @"visit";
 NSString * const MMEEventTypeLocalDebug = @"debug";
+NSString * const MMEventTypeOfflineDownloadStart = @"map.offlineDownload.start";
+NSString * const MMEventTypeOfflineDownloadComplete = @"map.offlineDownload.complete";
 
 NSString * const MMEEventGestureSingleTap = @"SingleTap";
 NSString * const MMEEventGestureDoubleTap = @"DoubleTap";
@@ -35,6 +45,8 @@ NSString * const MMEEventGesturePinchStart = @"Pinch";
 NSString * const MMEEventGestureRotateStart = @"Rotation";
 NSString * const MMEEventGesturePitchStart = @"Pitch";
 
+NSString * const MMEEventKeyArrivalDate = @"arrivalDate";
+NSString * const MMEEventKeyDepartureDate = @"departureDate";
 NSString * const MMEEventKeyLatitude = @"lat";
 NSString * const MMEEventKeyLongitude = @"lng";
 NSString * const MMEEventKeyZoomLevel = @"zoom";
@@ -62,12 +74,18 @@ NSString * const MMEEventKeyAltitude = @"altitude";
 NSString * const MMEEventSDKIdentifier = @"sdkIdentifier";
 NSString * const MMEEventSDKVersion = @"sdkVersion";
 NSString * const MMENavigationEventPrefix = @"navigation.";
+NSString * const MMEVisionEventPrefix = @"vision.";
 NSString * const MMEEventTypeNavigationDepart = @"navigation.depart";
 NSString * const MMEEventTypeNavigationArrive = @"navigation.arrive";
 NSString * const MMEEventTypeNavigationCancel = @"navigation.cancel";
 NSString * const MMEEventTypeNavigationFeedback = @"navigation.feedback";
 NSString * const MMEEventTypeNavigationReroute = @"navigation.reroute";
+NSString * const MMEventTypeNavigationCarplayConnect = @"navigation.carplay.connect";
+NSString * const MMEventTypeNavigationCarplayDisconnect = @"navigation.carplay.disconnect";
 NSString * const MMEDebugEventType = @"debug.type";
+NSString * const MMESearchEventPrefix = @"search.";
+NSString * const MMEEventTypeSearchSelected = @"search.selected";
+NSString * const MMEEventTypeSearchFeedback = @"search.feedback";
 
 NSString * const MMEEventSource = @"mapbox";
 

@@ -208,20 +208,29 @@ class StartupViewController: UIViewController, MGLMapViewDelegate, CLLocationMan
     }
     
     // MARK: Private functions
-    
     private func saveUser(){
-        let isSuccessfulSave = NSKeyedArchiver.archiveRootObject(self.userModel, toFile: UserModel.ArchiveURL.path)
-        if isSuccessfulSave {
+        do {
+            let data = try NSKeyedArchiver.archivedData(withRootObject: self.userModel!, requiringSecureCoding: false)
+            try data.write(to: UserModel.ArchiveURL)
             os_log("User successfully saved.", log: OSLog.default, type: .debug)
-        } else {
+        } catch {
             os_log("Failed to save user...", log: OSLog.default, type: .error)
         }
     }
     
     private func loadUser() -> UserModel?  {
-        return NSKeyedUnarchiver.unarchiveObject(withFile: UserModel.ArchiveURL.path) as? UserModel
+        if let nsData = NSData(contentsOfFile: UserModel.ArchiveURL.path) {
+            do {
+                let userData = Data(referencing:nsData)
+                let user = try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(userData) as? UserModel
+                return user
+            }
+            catch {
+                os_log("Failed to load user...", log: OSLog.default, type: .error)
+            }
+        }
+        return self.userModel
     }
-
     
 }
 

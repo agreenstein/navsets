@@ -13,6 +13,12 @@ open class NextBannerView: UIView {
     
     weak var maneuverView: ManeuverView!
     weak var instructionLabel: NextInstructionLabel!
+    weak var bottomSeparatorView: SeparatorView!
+    weak var instructionDelegate: VisualInstructionDelegate? {
+        didSet {
+            instructionLabel.instructionDelegate = instructionDelegate
+        }
+    }
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -38,22 +44,30 @@ open class NextBannerView: UIView {
         self.maneuverView = maneuverView
         
         let instructionLabel = NextInstructionLabel()
+        instructionLabel.instructionDelegate = instructionDelegate
         instructionLabel.shieldHeight = instructionLabel.font.pointSize
         instructionLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(instructionLabel)
         self.instructionLabel = instructionLabel
         
-        instructionLabel.availableBounds = {
-            let height = ("|" as NSString).size(withAttributes: [.font: self.instructionLabel.font]).height
-            let availableWidth = self.bounds.width-self.maneuverView.frame.maxX-(16*2)
-            return CGRect(x: 0, y: 0, width: availableWidth, height: height)
+        instructionLabel.availableBounds = { [unowned self] in
+            // Available width H:|-padding-maneuverView-padding-availableWidth-padding-|
+            let availableWidth = self.bounds.width - BaseInstructionsBannerView.maneuverViewSize.width - BaseInstructionsBannerView.padding * 3
+            return CGRect(x: 0, y: 0, width: availableWidth, height: self.instructionLabel.font.lineHeight)
         }
+        
+        let bottomSeparatorView = SeparatorView()
+        bottomSeparatorView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(bottomSeparatorView)
+        self.bottomSeparatorView = bottomSeparatorView
     }
     
     override open func prepareForInterfaceBuilder() {
         super.prepareForInterfaceBuilder()
         maneuverView.isEnd = true
-        instructionLabel.instruction = [VisualInstructionComponent(type: .destination, text: "Next step", imageURL: nil, maneuverType: .none, maneuverDirection: .none)]
+        let component = VisualInstructionComponent(type: .text, text: "Next step", imageURL: nil, abbreviation: nil, abbreviationPriority: NSNotFound)
+        let instruction = VisualInstruction(text: nil, maneuverType: .none, maneuverDirection: .none, components: [component])
+        instructionLabel.instruction = instruction
     }
     
     func setupLayout() {
@@ -62,40 +76,34 @@ open class NextBannerView: UIView {
         heightConstraint.isActive = true
         
         let midX = BaseInstructionsBannerView.padding + BaseInstructionsBannerView.maneuverViewSize.width / 2
-        maneuverView.centerXAnchor.constraint(equalTo: leftAnchor, constant: midX).isActive = true
+        maneuverView.centerXAnchor.constraint(equalTo: leadingAnchor, constant: midX).isActive = true
         maneuverView.heightAnchor.constraint(equalToConstant: 22).isActive = true
         maneuverView.widthAnchor.constraint(equalToConstant: 22).isActive = true
         maneuverView.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
         
-        instructionLabel.leftAnchor.constraint(equalTo: leftAnchor, constant: 70).isActive = true
+        instructionLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 70).isActive = true
         instructionLabel.centerYAnchor.constraint(equalTo: centerYAnchor).isActive = true
-        instructionLabel.rightAnchor.constraint(equalTo: rightAnchor, constant: -16).isActive = true
+        instructionLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16).isActive = true
+        
+        bottomSeparatorView.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
+        bottomSeparatorView.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+        bottomSeparatorView.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
+        bottomSeparatorView.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale).isActive = true
     }
     
-    func shouldShowNextBanner(for routeProgress: RouteProgress) -> Bool {
-        guard let upcomingStep = routeProgress.currentLegProgress.upComingStep else { return false }
-        
-        let durationForNext = RouteControllerHighAlertInterval * RouteControllerLinkedInstructionBufferMultiplier
-
-        guard routeProgress.currentLegProgress.currentStepProgress.durationRemaining <= durationForNext, upcomingStep.expectedTravelTime <= durationForNext else {
-                return false
-        }
-        
-        guard let _ = upcomingStep.instructionsDisplayedAlongStep?.last else { return false }
-        
-        return true
-    }
-    
-    public func update(for routeProgress: RouteProgress) {
-        guard shouldShowNextBanner(for: routeProgress) else {
+    /**
+     Updates the instructions banner info with a given `VisualInstructionBanner`.
+     */
+    @objc(updateForVisualInstructionBanner:)
+    public func update(for visualInstruction: VisualInstructionBanner?) {
+        guard let tertiaryInstruction = visualInstruction?.tertiaryInstruction, !tertiaryInstruction.containsLaneIndications else {
             hide()
             return
         }
         
-        guard let instruction = routeProgress.currentLegProgress.upComingStep?.instructionsDisplayedAlongStep?.last else { return }
-        
-        maneuverView.visualInstruction = instruction
-        instructionLabel.instruction = instruction.primaryTextComponents
+        maneuverView.visualInstruction = tertiaryInstruction
+        maneuverView.drivingSide = visualInstruction?.drivingSide ?? .right
+        instructionLabel.instruction = tertiaryInstruction
         show()
     }
     

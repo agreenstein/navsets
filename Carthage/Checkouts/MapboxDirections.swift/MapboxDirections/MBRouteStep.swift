@@ -600,7 +600,7 @@ open class RouteStep: NSObject, NSSecureCoding {
         self.instructionsSpokenAlongStep = voiceInstructionsJSON?.map { SpokenInstruction(json: $0) }
         
         let instructionsDisplayedAlongStep = json["bannerInstructions"] as? [JSONDictionary]
-        self.instructionsDisplayedAlongStep = instructionsDisplayedAlongStep?.map { VisualInstruction(json: $0, drivingSide: drivingSide) }
+        self.instructionsDisplayedAlongStep = instructionsDisplayedAlongStep?.map { VisualInstructionBanner(json: $0, drivingSide: drivingSide) }
         
         initialHeading = maneuver["bearing_before"] as? Double
         self.finalHeading = finalHeading
@@ -614,13 +614,14 @@ open class RouteStep: NSObject, NSSecureCoding {
     }
     
     /**
-     Initializes a new route step object with the given JSON dictionary representation.
+     Initializes a new route step object based on the given JSON dictionary representation.
      
      Normally, you do not create instances of this class directly. Instead, you receive route step objects as part of route objects when you request directions using the `Directions.calculateDirections(options:completionHandler:)` method, setting the `includesSteps` option to `true` in the `RouteOptions` object that you pass into that method.
      
-     - parameter json: A JSON dictionary representation of a route step object as returnd by the Mapbox Directions API.
+     - parameter json: A JSON object that conforms to the [route step](https://www.mapbox.com/api-documentation/#routestep-object) format described in the Directions API documentation.
      */
-    @objc public convenience init(json: [String: Any]) {
+    @objc(initWithJSON:options:)
+    public convenience init(json: [String: Any], options: RouteOptions) {
         let maneuver = json["maneuver"] as! JSONDictionary
         let finalHeading = maneuver["bearing_after"] as? Double
         let maneuverType = ManeuverType(description: maneuver["type"] as? String ?? "") ?? .none
@@ -630,15 +631,7 @@ open class RouteStep: NSObject, NSSecureCoding {
         
         let name = json["name"] as! String
         
-        var coordinates: [CLLocationCoordinate2D]?
-        switch json["geometry"] {
-        case let geometry as JSONDictionary:
-            coordinates = CLLocationCoordinate2D.coordinates(geoJSON: geometry)
-        case let geometry as String:
-            coordinates = decodePolyline(geometry, precision: 1e5)!
-        default:
-            coordinates = nil
-        }
+        let coordinates = options.shapeFormat.coordinates(from: json["geometry"])
         
         self.init(finalHeading: finalHeading, maneuverType: maneuverType, maneuverDirection: maneuverDirection, drivingSide: drivingSide, maneuverLocation: maneuverLocation, name: name, coordinates: coordinates, json: json)
     }
@@ -646,7 +639,7 @@ open class RouteStep: NSObject, NSSecureCoding {
     public required init?(coder decoder: NSCoder) {
         let coordinateDictionaries = decoder.decodeObject(of: [NSArray.self, NSDictionary.self, NSString.self, NSNumber.self], forKey: "coordinates") as? [[String: CLLocationDegrees]]
 		
-        coordinates = coordinateDictionaries?.flatMap({ (coordinateDictionary) -> CLLocationCoordinate2D? in
+        coordinates = coordinateDictionaries?.compactMap({ (coordinateDictionary) -> CLLocationCoordinate2D? in
             if let latitude = coordinateDictionary["latitude"], let longitude = coordinateDictionary["longitude"] {
                 return CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
             } else {
@@ -706,10 +699,10 @@ open class RouteStep: NSObject, NSSecureCoding {
         
         instructionsSpokenAlongStep = decoder.decodeObject(of: [NSArray.self, SpokenInstruction.self], forKey: "instructionsSpokenAlongStep") as? [SpokenInstruction]
         
-        instructionsDisplayedAlongStep = decoder.decodeObject(of: [NSArray.self, VisualInstruction.self], forKey: "instructionsDisplayedAlongStep") as? [VisualInstruction]
+        instructionsDisplayedAlongStep = decoder.decodeObject(of: [NSArray.self, VisualInstructionBanner.self], forKey: "instructionsDisplayedAlongStep") as? [VisualInstructionBanner]
     }
     
-    open static var supportsSecureCoding = true
+    public static var supportsSecureCoding = true
     
     public func encode(with coder: NSCoder) {
         let coordinateDictionaries = coordinates?.map { [
@@ -766,7 +759,7 @@ open class RouteStep: NSObject, NSSecureCoding {
      
      Using the [Mapbox Maps SDK for iOS](https://www.mapbox.com/ios-sdk/) or [Mapbox Maps SDK for macOS](https://github.com/mapbox/mapbox-gl-native/tree/master/platform/macos/), you can create an `MGLPolyline` object using these coordinates to display a portion of a route on an `MGLMapView`.
      */
-    @objc open let coordinates: [CLLocationCoordinate2D]?
+    @objc public let coordinates: [CLLocationCoordinate2D]?
     
     /**
      The number of coordinates.
@@ -813,7 +806,7 @@ open class RouteStep: NSObject, NSSecureCoding {
      
      - note: If you use MapboxDirections.swift with the Mapbox Directions API, this property is formatted and localized for display to the user. If you use OSRM directly, this property contains a basic string that only includes the maneuver type and direction. Use [OSRM Text Instructions](https://github.com/Project-OSRM/osrm-text-instructions.swift/) to construct a complete, localized instruction string for display.
      */
-    @objc open let instructions: String
+    @objc public let instructions: String
     
     /**
      Instructions about the next step’s maneuver, optimized for speech synthesis.
@@ -822,17 +815,16 @@ open class RouteStep: NSObject, NSSecureCoding {
      
      This property is non-`nil` if the `RouteOptions.includesSpokenInstructions` option is set to `true`. For instructions designed for display, use the `instructions` property.
      */
-    @objc open let instructionsSpokenAlongStep: [SpokenInstruction]?
+    @objc public let instructionsSpokenAlongStep: [SpokenInstruction]?
     
     /**
-     :nodoc:
      Instructions about the next step’s maneuver, optimized for display in real time.
      
      As the user traverses this step, you can give them advance notice of the upcoming maneuver by displaying each item in this array in order as the user reaches the specified distances along this step. The text and images of the visual instructions refer to the details in the next step, but the distances are measured from the beginning of this step.
      
      This property is non-`nil` if the `RouteOptions.includesVisualInstructions` option is set to `true`. For instructions designed for speech synthesis, use the `instructionsSpokenAlongStep` property. For instructions designed for display in a static list, use the `instructions` property.
      */
-    @objc open let instructionsDisplayedAlongStep: [VisualInstruction]?
+    @objc public let instructionsDisplayedAlongStep: [VisualInstructionBanner]?
     
     @objc open override var description: String {
         return instructions
@@ -841,34 +833,34 @@ open class RouteStep: NSObject, NSSecureCoding {
     /**
      The user’s heading immediately before performing the maneuver.
      */
-    open let initialHeading: CLLocationDirection?
+    public let initialHeading: CLLocationDirection?
     
     /**
      The user’s heading immediately after performing the maneuver.
      
      The value of this property may differ from the user’s heading after traveling along the road past the maneuver.
      */
-    open let finalHeading: CLLocationDirection?
+    public let finalHeading: CLLocationDirection?
     
     /**
      The type of maneuver required for beginning this step.
      */
-    @objc open let maneuverType: ManeuverType
+    @objc public let maneuverType: ManeuverType
     
     /**
      Additional directional information to clarify the maneuver type.
      */
-    @objc open let maneuverDirection: ManeuverDirection
+    @objc public let maneuverDirection: ManeuverDirection
     
     /**
-     Indicates what side of a bidirectional road the driver must be driving on. Also referred to as the rule of the road.
+     Which side of a bidirectional road the driver should drive on, also known as the rule of the road.
      */
-    open let drivingSide: DrivingSide
+    public let drivingSide: DrivingSide
     
     /**
      The location of the maneuver at the beginning of this step.
      */
-    @objc open let maneuverLocation: CLLocationCoordinate2D
+    @objc public let maneuverLocation: CLLocationCoordinate2D
     
     /**
      The number of exits from the previous maneuver up to and including this step’s maneuver.
@@ -877,7 +869,7 @@ open class RouteStep: NSObject, NSSecureCoding {
      
      In some cases, the number of exits leading to a maneuver may be more useful to the user than the distance to the maneuver.
      */
-    open let exitIndex: Int?
+    public let exitIndex: Int?
     
     /**
      Any [exit numbers](https://en.wikipedia.org/wiki/Exit_number) assigned to the highway exit at the maneuver.
@@ -886,7 +878,7 @@ open class RouteStep: NSObject, NSSecureCoding {
      
      An exit number is an alphanumeric identifier posted at or ahead of a highway off-ramp. Exit numbers may increase or decrease sequentially along a road, or they may correspond to distances from either end of the road. An alphabetic suffix may appear when multiple exits are located in the same interchange. If multiple exits are [combined into a single exit](https://en.wikipedia.org/wiki/Local-express_lanes#Example_of_cloverleaf_interchanges), the step may have multiple exit codes.
      */
-    @objc open let exitCodes: [String]?
+    @objc public let exitCodes: [String]?
     
     /**
      The names of the roundabout exit.
@@ -904,7 +896,7 @@ open class RouteStep: NSObject, NSSecureCoding {
      
      The transcription is written in the [International Phonetic Alphabet](https://en.wikipedia.org/wiki/International_Phonetic_Alphabet).
      */
-    @objc open let phoneticExitNames: [String]?
+    @objc public let phoneticExitNames: [String]?
     
     // MARK: Getting Details About the Approach to the Next Maneuver
     
@@ -913,7 +905,7 @@ open class RouteStep: NSObject, NSSecureCoding {
      
      The value of this property accounts for the distance that the user must travel to go from this step’s maneuver location to the next step’s maneuver location. It is not the sum of the direct distances between the route’s waypoints, nor should you assume that the user would travel along this distance at a fixed speed.
      */
-    @objc open let distance: CLLocationDistance
+    @objc public let distance: CLLocationDistance
     
     /**
      The step’s expected travel time, measured in seconds.
@@ -922,7 +914,7 @@ open class RouteStep: NSObject, NSSecureCoding {
      
      Do not assume that the user would travel along the step at a fixed speed. For the expected travel time on each individual segment along the leg, specify the `AttributeOptions.expectedTravelTime` option and use the `RouteLeg.expectedSegmentTravelTimes` property.
      */
-    @objc open let expectedTravelTime: TimeInterval
+    @objc public let expectedTravelTime: TimeInterval
     
     /**
      The names of the road or path leading from this step’s maneuver to the next step’s maneuver.
@@ -931,7 +923,7 @@ open class RouteStep: NSObject, NSSecureCoding {
      
      If the maneuver is a roundabout maneuver, the outlet to take is named in the `exitNames` property; the `names` property is only set for large roundabouts that have their own names.
      */
-    @objc open let names: [String]?
+    @objc public let names: [String]?
     
     /**
      A phonetic or phonemic transcription indicating how to pronounce the names in the `names` property.
@@ -940,7 +932,7 @@ open class RouteStep: NSObject, NSSecureCoding {
      
      If the maneuver traverses a large, named roundabout, the `exitPronunciationHints` property contains a hint about how to pronounce the names of the outlet to take.
      */
-    @objc open let phoneticNames: [String]?
+    @objc public let phoneticNames: [String]?
     
     /**
      Any route reference codes assigned to the road or path leading from this step’s maneuver to the next step’s maneuver.
@@ -949,7 +941,7 @@ open class RouteStep: NSObject, NSSecureCoding {
      
      If a highway ramp is part of a numbered route, its reference code is contained in this property. On the other hand, guide signage for a highway ramp usually indicates route reference codes of the adjoining road; use the `destinationCodes` property for those route reference codes.
      */
-    @objc open let codes: [String]?
+    @objc public let codes: [String]?
     
     // MARK: Getting Additional Step Details
     
@@ -958,7 +950,7 @@ open class RouteStep: NSObject, NSSecureCoding {
      
      This step may use a different mode of transportation than the overall route.
      */
-    @objc open let transportType: TransportType
+    @objc public let transportType: TransportType
     
     /**
      Any route reference codes that appear on guide signage for the road leading from this step’s maneuver to the next step’s maneuver.
@@ -974,7 +966,7 @@ open class RouteStep: NSObject, NSSecureCoding {
      
      This property is typically available in steps leading to or from a freeway or expressway.
      */
-    @objc open let destinations: [String]?
+    @objc public let destinations: [String]?
     
     /**
      An array of intersections along the step.

@@ -24,7 +24,8 @@ function generate_namespace_header {
 
     echo "Generating $NAME_HEADER from $1"
 
-    echo "// Namespaced Header
+    echo "// This namespaced header is generated.
+// Add source files to the MapboxMobileEventsStatic target, then run \`make name-header\`.
 
 #ifndef __NS_SYMBOL
 // We need to have multiple levels of macros here so that __NAMESPACE_PREFIX_ is
@@ -62,7 +63,7 @@ function build() {
         -sdk $1 build | xcpretty
 }
 
-function create_static_framework() {
+function create_static_library() {
     step "Cleaning build folder"
     rm -rf build/*
 
@@ -77,6 +78,26 @@ function create_static_framework() {
     libtool -static -no_warning_for_no_symbols -o ${OUTPUT}/libMapboxEvents.a \
         ${PRODUCTS}/${BUILDTYPE}-iphoneos/libMapboxMobileEventsStatic.a \
         ${PRODUCTS}/${BUILDTYPE}-iphonesimulator/libMapboxMobileEventsStatic.a
+
+    step "Copying header files"
+    mkdir -p ${OUTPUT}/include/MapboxMobileEvents
+    cp MapboxMobileEvents/MMETypes.h ${OUTPUT}/include/MapboxMobileEvents/MMETypes.h
+    cp MapboxMobileEvents/MMEConstants.h ${OUTPUT}/include/MapboxMobileEvents/MMEConstants.h
+    cp MapboxMobileEvents/MMEEvent.h ${OUTPUT}/include/MapboxMobileEvents/MMEEvent.h
+    cp MapboxMobileEvents/MMEEventsManager.h ${OUTPUT}/include/MapboxMobileEvents/MMEEventsManager.h
+    cp MapboxMobileEvents/MapboxMobileEvents.h ${OUTPUT}/include/MapboxMobileEvents/MapboxMobileEvents.h
+
+    step "Copying plist"
+    cp MapboxMobileEvents/Info.plist ${OUTPUT}/Info.plist
+
+    step "Compressing"
+    mv build/namespace/static build/namespace/mapbox-events-ios-static
+    cd build/namespace
+    zip -r mapbox-events-ios-static.zip mapbox-events-ios-static
+    cd -
+    cp -r build/namespace/mapbox-events-ios-static.zip build/mapbox-events-ios-static.zip 
+
+    step "mapbox-events-ios-static.zip is now available in the build folder"
 }
 
 function package_namespace_header() {
@@ -136,7 +157,7 @@ while getopts ":hsvt:" opt; do
       package_namespace_header
       ;;
     s)
-      create_static_framework
+      create_static_library
       ;;
     v) 
       get_current_version_number

@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import <CoreLocation/CoreLocation.h>
+#import "MMEEventsConfiguration.h"
 
 @protocol MMELocationManagerDelegate;
 
@@ -12,6 +13,10 @@
 
 - (void)startUpdatingLocation;
 - (void)stopUpdatingLocation;
+
+@optional
+
+- (void)reconfigure:(MMEEventsConfiguration *)configuration;
 
 @end
 
@@ -39,5 +44,6 @@ extern NSString * const MMELocationManagerRegionIdentifier;
 - (void)locationManagerBackgroundLocationUpdatesDidTimeout:(MMELocationManager *)locationManager;
 - (void)locationManagerBackgroundLocationUpdatesDidAutomaticallyPause:(MMELocationManager *)locationManager;
 - (void)locationManagerDidStopLocationUpdates:(MMELocationManager *)locationManager;
+- (void)locationManager:(MMELocationManager *)locationManager didVisit:(CLVisit *)visit;
 
 @end

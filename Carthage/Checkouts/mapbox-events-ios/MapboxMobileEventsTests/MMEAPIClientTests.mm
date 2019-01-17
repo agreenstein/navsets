@@ -4,7 +4,7 @@
 #import "MMEConstants.h"
 #import "MMEEvent.h"
 #import "MMECommonEventData.h"
-#import "MMETrustKitWrapper.h"
+#import "MMETrustKitProvider.h"
 #import "MMENSURLSessionWrapperFake.h"
 #import "MMEAPIClientFake.h"
 
@@ -79,6 +79,18 @@ describe(@"MMEAPIClient", ^{
             });
         });
         
+        context(@"when plist configured API endpoint to China API", ^{
+            beforeEach(^{
+                spy_on([NSBundle mainBundle]);
+                [NSBundle mainBundle] stub_method(@selector(objectForInfoDictionaryKey:)).with(@"MGLMapboxAPIBaseURL").and_return(MMEAPIClientBaseChinaAPIURL);
+                apiClient.baseURL = nil;
+            });
+
+            it(@"auto switch the events endpoint to China events API", ^{
+                apiClient.baseURL should equal([NSURL URLWithString:MMEAPIClientBaseChinaEventsURL]);
+            });
+        });
+
         context(@"when setting up user agent", ^{
             __block NSString *expectedUserAgent;
 
@@ -100,6 +112,44 @@ describe(@"MMEAPIClient", ^{
 
             it(@"should equal expectedUserAgent", ^{
                 expectedUserAgent should equal(apiClient.userAgent);
+            });
+        });
+    });
+    
+    describe(@"- getConfigurationWithCompletionHandler:", ^{
+        __block MMENSURLSessionWrapperFake *sessionWrapperFake;
+        __block NSError *capturedError;
+        
+        beforeEach(^{
+            sessionWrapperFake = [[MMENSURLSessionWrapperFake alloc] init];
+            spy_on(sessionWrapperFake);
+            
+            apiClient.sessionWrapper = sessionWrapperFake;
+        });
+        
+        context(@"when getting configuration", ^{
+            __block NSError *error;
+            
+            beforeEach(^{
+                [apiClient getConfigurationWithCompletionHandler:^(NSError * _Nullable error, NSData * _Nullable data) {
+                    capturedError = error;
+                }];
+            });
+            
+            context(@"when network is offline", ^{
+                beforeEach(^{
+                    error = [NSError errorWithDomain:@"test" code:42 userInfo:nil];
+                    NSHTTPURLResponse *responseFake = nil;
+                    NSURLRequest *requestFake = [[NSURLRequest alloc] initWithURL:apiClient.baseURL];
+                    
+                    [sessionWrapperFake completeProcessingWithData:nil response:responseFake error:error];
+                    [apiClient statusErrorFromRequest:requestFake andHTTPResponse:responseFake] should be_nil;
+                    [apiClient unexpectedResponseErrorfromRequest:requestFake andResponse:responseFake] should_not be_nil;
+                });
+                
+                it(@"should equal completed process error", ^{
+                    capturedError should equal(error);
+                });
             });
         });
     });
@@ -142,7 +192,8 @@ describe(@"MMEAPIClient", ^{
                 
                 beforeEach(^{
                     error = [NSError errorWithDomain:@"test" code:42 userInfo:nil];
-                    [sessionWrapperFake completeProcessingWithData:nil response:nil error:error];
+                    NSHTTPURLResponse *responseFake = [[NSHTTPURLResponse alloc] initWithURL:apiClient.baseURL statusCode:400 HTTPVersion:nil headerFields:nil];
+                    [sessionWrapperFake completeProcessingWithData:nil response:responseFake error:error];
                 });
                 
                 it(@"should equal completed process error", ^{

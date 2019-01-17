@@ -32,6 +32,16 @@ open class LaneView: UIView {
         return isValid ? primaryColor : secondaryColor
     }
     
+    static let defaultFrame: CGRect = CGRect(origin: .zero, size: 30.0)
+    
+    convenience init(component: LaneIndicationComponent) {
+        self.init(frame: LaneView.defaultFrame)
+        backgroundColor = .clear
+        lane = Lane(indications: component.indications)
+        maneuverDirection = ManeuverDirection(description: component.indications.description)
+        isValid = component.isUsable
+    }
+    
     override open func draw(_ rect: CGRect) {
         super.draw(rect)
         if let lane = lane {
@@ -39,12 +49,20 @@ open class LaneView: UIView {
             if lane.indications.isSuperset(of: [.straightAhead, .sharpRight]) || lane.indications.isSuperset(of: [.straightAhead, .right]) || lane.indications.isSuperset(of: [.straightAhead, .slightRight]) {
                 flipLane = false
                 if !isValid {
-                    LanesStyleKit.drawLane_straight_right(primaryColor: appropriatePrimaryColor)
+                    if lane.indications == .slightRight {
+                        LanesStyleKit.drawLane_slight_right(primaryColor: appropriatePrimaryColor)
+                    } else {
+                        LanesStyleKit.drawLane_straight_right(primaryColor: appropriatePrimaryColor)
+                    }
                     alpha = invalidAlpha
                 } else if maneuverDirection == .straightAhead {
                     LanesStyleKit.drawLane_straight_only(primaryColor: appropriatePrimaryColor, secondaryColor: secondaryColor)
                 } else if maneuverDirection == .sharpLeft || maneuverDirection == .left || maneuverDirection == .slightLeft {
-                    LanesStyleKit.drawLane_right_h(primaryColor: appropriatePrimaryColor)
+                    if lane.indications == .slightLeft {
+                        LanesStyleKit.drawLane_slight_right(primaryColor: appropriatePrimaryColor)
+                    } else {
+                        LanesStyleKit.drawLane_right_h(primaryColor: appropriatePrimaryColor)
+                    }
                     flipLane = true
                 } else {
                     LanesStyleKit.drawLane_right_only(primaryColor: appropriatePrimaryColor, secondaryColor: secondaryColor)
@@ -52,12 +70,20 @@ open class LaneView: UIView {
             } else if lane.indications.isSuperset(of: [.straightAhead, .sharpLeft]) || lane.indications.isSuperset(of: [.straightAhead, .left]) || lane.indications.isSuperset(of: [.straightAhead, .slightLeft]) {
                 flipLane = true
                 if !isValid {
-                    LanesStyleKit.drawLane_straight_right(primaryColor: appropriatePrimaryColor)
+                    if lane.indications == .slightLeft {
+                        LanesStyleKit.drawLane_slight_right(primaryColor: appropriatePrimaryColor)
+                    } else {
+                        LanesStyleKit.drawLane_straight_right(primaryColor: appropriatePrimaryColor)
+                    }
+                    
                     alpha = invalidAlpha
                 } else if maneuverDirection == .straightAhead {
                     LanesStyleKit.drawLane_straight_only(primaryColor: appropriatePrimaryColor, secondaryColor: secondaryColor)
-                } else if maneuverDirection == .sharpRight || maneuverDirection == .right || maneuverDirection == .slightRight {
+                } else if maneuverDirection == .sharpRight || maneuverDirection == .right {
                     LanesStyleKit.drawLane_right_h(primaryColor: appropriatePrimaryColor)
+                    flipLane = false
+                } else if maneuverDirection == .slightRight {
+                    LanesStyleKit.drawLane_slight_right(primaryColor: appropriatePrimaryColor)
                     flipLane = false
                 } else {
                     LanesStyleKit.drawLane_right_only(primaryColor: appropriatePrimaryColor, secondaryColor: secondaryColor)
@@ -67,8 +93,11 @@ open class LaneView: UIView {
                 // Account for a configuation where there is no straight lane
                 // but there are at least 2 indications.
                 // In this situation, just draw a left/right arrow
-                if maneuverDirection == .sharpRight || maneuverDirection == .right || maneuverDirection == .slightRight {
+                if maneuverDirection == .sharpRight || maneuverDirection == .right {
                     LanesStyleKit.drawLane_right_h(primaryColor: appropriatePrimaryColor)
+                    flipLane = false
+                } else if maneuverDirection == .slightRight {
+                    LanesStyleKit.drawLane_slight_right(primaryColor: appropriatePrimaryColor)
                     flipLane = false
                 } else {
                     LanesStyleKit.drawLane_right_h(primaryColor: appropriatePrimaryColor)
@@ -76,11 +105,19 @@ open class LaneView: UIView {
                 }
                 alpha = isValid ? 1 : invalidAlpha
             } else if lane.indications.isSuperset(of: [.sharpRight]) || lane.indications.isSuperset(of: [.right]) || lane.indications.isSuperset(of: [.slightRight]) {
-                LanesStyleKit.drawLane_right_h(primaryColor: appropriatePrimaryColor)
+                if lane.indications == .slightRight {
+                    LanesStyleKit.drawLane_slight_right(primaryColor: appropriatePrimaryColor)
+                } else {
+                    LanesStyleKit.drawLane_right_h(primaryColor: appropriatePrimaryColor)
+                }
                 flipLane = false
                 alpha = isValid ? 1 : invalidAlpha
             } else if lane.indications.isSuperset(of: [.sharpLeft]) || lane.indications.isSuperset(of: [.left]) || lane.indications.isSuperset(of: [.slightLeft]) {
-                LanesStyleKit.drawLane_right_h(primaryColor: appropriatePrimaryColor)
+                if lane.indications == .slightLeft {
+                    LanesStyleKit.drawLane_slight_right(primaryColor: appropriatePrimaryColor)
+                } else {
+                    LanesStyleKit.drawLane_right_h(primaryColor: appropriatePrimaryColor)
+                }
                 flipLane = true
                 alpha = isValid ? 1 : invalidAlpha
             } else if lane.indications.isSuperset(of: [.straightAhead]) {
@@ -95,10 +132,18 @@ open class LaneView: UIView {
                 // If the lane indication is `none` and the maneuver modifier has a turn in it,
                 // show the turn in the lane image.
                 if maneuverDirection == .sharpRight || maneuverDirection == .right || maneuverDirection == .slightRight {
-                    LanesStyleKit.drawLane_right_h(primaryColor: appropriatePrimaryColor)
+                    if maneuverDirection == .slightRight {
+                        LanesStyleKit.drawLane_slight_right(primaryColor: appropriatePrimaryColor)
+                    } else {
+                        LanesStyleKit.drawLane_right_h(primaryColor: appropriatePrimaryColor)
+                    }
                     flipLane = false
                 } else if maneuverDirection == .sharpLeft || maneuverDirection == .left || maneuverDirection == .slightLeft {
-                    LanesStyleKit.drawLane_right_h(primaryColor: appropriatePrimaryColor)
+                    if maneuverDirection == .slightLeft {
+                        LanesStyleKit.drawLane_slight_right(primaryColor: appropriatePrimaryColor)
+                    } else {
+                        LanesStyleKit.drawLane_right_h(primaryColor: appropriatePrimaryColor)
+                    }
                     flipLane = true
                 } else {
                     LanesStyleKit.drawLane_straight(primaryColor: appropriatePrimaryColor)

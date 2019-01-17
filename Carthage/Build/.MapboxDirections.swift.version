@@ -1,9 +1,9 @@
 {
-  "commitish" : "v0.17.0",
+  "commitish" : "v0.26.0",
   "iOS" : [
     {
       "name" : "MapboxDirections",
-      "hash" : "1aa771c867b967228d25393a30b66d87c37bba54eb346cac00b8ca35722181a3"
+      "hash" : "4e9181d110e5730d06c0bf7ada10bdfb26bb66040197ff45f98e6f00fa898813"
     }
   ]
 }

@@ -1,7 +1,7 @@
 import Foundation
 
 @objc(MBTextType)
-public enum TextType: UInt, CustomStringConvertible {
+public enum TextType: UInt, CustomStringConvertible, Codable {
     
     case text
     
@@ -31,23 +31,15 @@ public enum TextType: UInt, CustomStringConvertible {
 }
 
 @objc(MBAudioFormat)
-public enum AudioFormat: UInt, CustomStringConvertible {
+public enum AudioFormat: UInt, CustomStringConvertible, Codable {
 
     case mp3
-    
-    case oggVorbis
-    
-    case pcm
     
     public init?(description: String) {
         let format: AudioFormat
         switch description {
         case "mp3":
             format = .mp3
-        case "ogg_vorbis":
-            format = .oggVorbis
-        case "pcm":
-            format = .pcm
         default:
             return nil
         }
@@ -58,16 +50,12 @@ public enum AudioFormat: UInt, CustomStringConvertible {
         switch self {
         case .mp3:
             return "mp3"
-        case .oggVorbis:
-            return "ogg_vorbis"
-        case .pcm:
-            return "pcm"
         }
     }
 }
 
 @objc(MBSpeechGender)
-public enum SpeechGender: UInt, CustomStringConvertible {
+public enum SpeechGender: UInt, CustomStringConvertible, Codable {
     
     case female
     
@@ -101,7 +89,7 @@ public enum SpeechGender: UInt, CustomStringConvertible {
 }
 
 @objc(MBSpeechOptions)
-open class SpeechOptions: NSObject, NSSecureCoding {
+open class SpeechOptions: NSObject, Codable {
     
     @objc public init(text: String) {
         self.text = text
@@ -111,39 +99,6 @@ open class SpeechOptions: NSObject, NSSecureCoding {
     @objc public init(ssml: String) {
         self.text = ssml
         self.textType = .ssml
-    }
-    
-    public required init?(coder decoder: NSCoder) {
-        text = decoder.decodeObject(of: [NSArray.self, NSString.self], forKey: "text") as? String ?? ""
-        
-        guard let textType = TextType(description: decoder.decodeObject(of: NSString.self, forKey: "textType") as String? ?? "") else {
-            return nil
-        }
-        self.textType = textType
-        
-        guard let outputFormat = AudioFormat(description: decoder.decodeObject(of: NSString.self, forKey: "outputFormat") as String? ?? "") else {
-            return nil
-        }
-        self.outputFormat = outputFormat
-        
-        if let locale = decoder.decodeObject(of: NSLocale.self, forKey: "locale") as Locale? {
-            self.locale = locale
-        }
-        
-        guard let speechGender = SpeechGender(description: decoder.decodeObject(of: NSString.self, forKey: "speechGender") as String? ?? "") else {
-            return nil
-        }
-        self.speechGender = speechGender
-    }
-    
-    open static var supportsSecureCoding = true
-    
-    public func encode(with coder: NSCoder) {
-        coder.encode(text, forKey: "text")
-        coder.encode(textType, forKey: "textType")
-        coder.encode(locale, forKey: "locale")
-        coder.encode(outputFormat, forKey: "outputFormat")
-        coder.encode(speechGender, forKey: "speechGender")
     }
     
     /**

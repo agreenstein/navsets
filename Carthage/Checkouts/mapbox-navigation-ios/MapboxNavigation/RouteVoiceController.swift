@@ -31,7 +31,7 @@ extension SpokenInstruction {
     @available(iOS 10.0, *)
     func attributedText(for legProgress: RouteLegProgress) -> NSAttributedString {
         let attributedText = NSMutableAttributedString(string: text)
-        if let step = legProgress.upComingStep,
+        if let step = legProgress.upcomingStep,
             let name = step.names?.first,
             let phoneticName = step.phoneticNames?.first {
             let nameRange = attributedText.mutableString.range(of: name)
@@ -55,30 +55,11 @@ extension SpokenInstruction {
  The `RouteVoiceController` class provides voice guidance.
  */
 @objc(MBRouteVoiceController)
-open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate, AVAudioPlayerDelegate {
+open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate {
     
     lazy var speechSynth = AVSpeechSynthesizer()
-    var audioPlayer: AVAudioPlayer?
     
-    /**
-     A boolean value indicating whether instructions should be announced by voice or not.
-     */
-    @objc public var isEnabled: Bool = true
-    
-    /**
-     Volume of announcements.
-     */
-    @objc public var volume: Float = 1.0
-    
-    /**
-     SSML option which controls at which speed Polly instructions are read.
-     */
-    @objc public var instructionVoiceSpeedRate = 1.08
-    
-    /**
-     SSML option that specifies the voice loudness.
-     */
-    @objc public var instructionVoiceVolume = "default"
+    let audioQueue = DispatchQueue(label: Bundle.mapboxNavigation.bundleIdentifier! + ".audio")
     
     /**
      If true, a noise indicating the user is going to be rerouted will play prior to rerouting.
@@ -89,11 +70,6 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate, AVAudioP
      Sound to play prior to reroute. Inherits volume level from `volume`.
      */
     @objc public var rerouteSoundPlayer: AVAudioPlayer = try! AVAudioPlayer(data: NSDataAsset(name: "reroute-sound", bundle: .mapboxNavigation)!.data, fileTypeHint: AVFileType.mp3.rawValue)
-    
-    /**
-     Buffer time between announcements. After an announcement is given any announcement given within this `TimeInterval` will be suppressed.
-     */
-    @objc public var bufferBetweenAnnouncements: TimeInterval = 3
     
     /**
      Delegate used for getting metadata information about a particular spoken instruction.
@@ -111,16 +87,24 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate, AVAudioP
      */
     override public init() {
         super.init()
+
+        verifyBackgroundAudio()
+
+        speechSynth.delegate = self
         
+        resumeNotifications()
+    }
+
+    private func verifyBackgroundAudio() {
+        guard UIApplication.shared.isKind(of: UIApplication.self) else {
+            return
+        }
+
         if !Bundle.main.backgroundModes.contains("audio") {
             assert(false, "This application’s Info.plist file must include “audio” in UIBackgroundModes. This background mode is used for spoken instructions while the application is in the background.")
         }
-        
-        speechSynth.delegate = self
-        rerouteSoundPlayer.delegate = self
-        resumeNotifications()
     }
-    
+
     deinit {
         suspendNotifications()
         speechSynth.stopSpeaking(at: .immediate)
@@ -131,13 +115,8 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate, AVAudioP
         NotificationCenter.default.addObserver(self, selector: #selector(pauseSpeechAndPlayReroutingDing(notification:)), name: .routeControllerWillReroute, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(didReroute(notification:)), name: .routeControllerDidReroute, object: nil)
         
-        volumeToken = NavigationSettings.shared.observe(\.voiceVolume) { [weak self] (settings, change) in
-            self?.audioPlayer?.volume = settings.voiceVolume
-        }
-        
         muteToken = NavigationSettings.shared.observe(\.voiceMuted) { [weak self] (settings, change) in
             if settings.voiceMuted {
-                self?.audioPlayer?.stop()
                 self?.speechSynth.stopSpeaking(at: .immediate)
             }
         }
@@ -151,33 +130,24 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate, AVAudioP
     
     @objc func didReroute(notification: NSNotification) {
         // Play reroute sound when a faster route is found
-        if notification.userInfo?[RouteControllerNotificationUserInfoKey.isOpportunisticKey] as! Bool {
+        if notification.userInfo?[RouteControllerNotificationUserInfoKey.isProactiveKey] as! Bool {
             pauseSpeechAndPlayReroutingDing(notification: notification)
         }
     }
     
     @objc func pauseSpeechAndPlayReroutingDing(notification: NSNotification) {
-        speechSynth.stopSpeaking(at: .word)
-        
         guard playRerouteSound && !NavigationSettings.shared.voiceMuted else {
             return
         }
+        
+        speechSynth.stopSpeaking(at: .word)
         
         do {
             try mixAudio()
         } catch {
             voiceControllerDelegate?.voiceController?(self, spokenInstructionsDidFailWith: error)
         }
-        rerouteSoundPlayer.volume = volume
         rerouteSoundPlayer.play()
-    }
-    
-    @objc public func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        do {
-            try unDuckAudio()
-        } catch {
-            voiceControllerDelegate?.voiceController?(self, spokenInstructionsDidFailWith: error)
-        }
     }
     
     @objc public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
@@ -209,7 +179,7 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate, AVAudioP
         
         routeProgress = notification.userInfo![RouteControllerNotificationUserInfoKey.routeProgressKey] as? RouteProgress
         assert(routeProgress != nil, "routeProgress should not be nil.")
-        
+
         guard let instruction = routeProgress!.currentLegProgress.currentStepProgress.currentSpokenInstruction else { return }
         lastSpokenInstruction = instruction
         speak(instruction)
@@ -242,8 +212,8 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate, AVAudioP
         
         let modifiedInstruction = voiceControllerDelegate?.voiceController?(self, willSpeak: instruction, routeProgress: routeProgress!) ?? instruction
         
-        if #available(iOS 10.0, *), utterance?.voice == nil, let legProgress = routeProgress!.currentLegProgress {
-            utterance = AVSpeechUtterance(attributedString: modifiedInstruction.attributedText(for: legProgress))
+        if #available(iOS 10.0, *), utterance?.voice == nil {
+            utterance = AVSpeechUtterance(attributedString: modifiedInstruction.attributedText(for: routeProgress!.currentLegProgress))
         } else {
             utterance = AVSpeechUtterance(string: modifiedInstruction.text)
         }
@@ -252,7 +222,6 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate, AVAudioP
         if utterance?.voice == nil {
             utterance?.voice = AVSpeechSynthesisVoice(language: Locale.preferredLocalLanguageCountryCode)
         }
-        utterance?.volume = volume
         
         if let utterance = utterance {
             speechSynth.speak(utterance)

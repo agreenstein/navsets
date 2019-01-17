@@ -7,4 +7,5 @@ framework module Polyline {
 
 module Polyline.Swift {
     header "Polyline-Swift.h"
+    requires objc
 }

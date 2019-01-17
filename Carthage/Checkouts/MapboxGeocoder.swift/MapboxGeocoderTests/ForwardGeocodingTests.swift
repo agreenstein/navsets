@@ -39,15 +39,18 @@ class ForwardGeocodingTests: XCTestCase {
             XCTAssertEqual(task.state, URLSessionTask.State.completed)
         }
         
+        XCTAssertEqual(addressPlacemark.routableLocations![0].coordinate.longitude, CLLocationDegrees(138.995284))
+        XCTAssertEqual(addressPlacemark.routableLocations![0].coordinate.latitude, CLLocationDegrees(-34.470403))
+        XCTAssertEqual(addressPlacemark.relevance, 0.39, "addressPlacemark.relevance should be 0.39")
         XCTAssertEqual(addressPlacemark.description, "Pennsylvania Ave", "forward geocode should populate description")
-        XCTAssertEqual(addressPlacemark.debugDescription, "Pennsylvania Ave, Wasaga Beach, Ontario L9Z 3A8, Canada", "forward geocode should populate debug description")
+        XCTAssertEqual(addressPlacemark.qualifiedName!, "Pennsylvania Ave, Wasaga Beach, Ontario L9Z 3A8, Canada", "forward geocode should populate qualified name")
         XCTAssertEqual(addressPlacemark.name, "Pennsylvania Ave", "forward geocode should populate name")
         XCTAssertEqual(addressPlacemark.qualifiedNameComponents, ["Pennsylvania Ave", "Wasaga Beach", "Ontario L9Z 3A8", "Canada"], "forward geocode should populate name")
         XCTAssertEqual(addressPlacemark.qualifiedName, "Pennsylvania Ave, Wasaga Beach, Ontario L9Z 3A8, Canada", "forward geocode should populate name")
         XCTAssertEqual(addressPlacemark.superiorPlacemarks?.count, 4, "forward geocode should populate superior placemarks")
-        XCTAssertEqual(addressPlacemark.location.coordinate.latitude, 44.5047077, "forward geocode should populate location")
+        XCTAssertEqual(addressPlacemark.location!.coordinate.latitude, 44.5047077, "forward geocode should populate location")
     
-        XCTAssertEqual(addressPlacemark.location.coordinate.longitude, -79.9850737, "forward geocode should populate location")
+        XCTAssertEqual(addressPlacemark.location!.coordinate.longitude, -79.9850737, "forward geocode should populate location")
         XCTAssertEqual(addressPlacemark.scope, PlacemarkScope.address, "forward geocode should populate scope")
         XCTAssertEqual(addressPlacemark.country?.code, "CA", "forward geocode should populate ISO country code")
         XCTAssertEqual(addressPlacemark.country?.name, "Canada", "forward geocode should populate country")
@@ -125,14 +128,14 @@ class ForwardGeocodingTests: XCTestCase {
         }
         
         XCTAssertEqual(placemark.description, "海南区", "forward geocode should populate description")
-        XCTAssertEqual(placemark.debugDescription, "中国内蒙古乌海市海南区", "forward geocode should populate debug description")
+        XCTAssertEqual(placemark.qualifiedName!, "中国内蒙古乌海市海南区", "forward geocode should populate qualified name")
         XCTAssertEqual(placemark.name, "海南区", "forward geocode should populate name")
         XCTAssertEqual(placemark.qualifiedNameComponents, ["中国", "内蒙古", "乌海市", "海南区"], "forward geocode in Chinese should reverse address components")
         XCTAssertEqual(placemark.qualifiedName, "中国内蒙古乌海市海南区", "forward geocode should populate name")
         XCTAssertEqual(placemark.superiorPlacemarks?.count, 3, "forward geocode should populate superior placemarks")
-        XCTAssertEqual(placemark.location.coordinate.latitude, 39.458115, "forward geocode should populate location")
-    
-        XCTAssertEqual(placemark.location.coordinate.longitude, 106.820552, "forward geocode should populate location")
+        XCTAssertEqual(placemark.location!.coordinate.latitude, 39.458115, "forward geocode should populate location")
+        
+        XCTAssertEqual(placemark.location!.coordinate.longitude, 106.820552, "forward geocode should populate location")
         XCTAssertEqual(placemark.scope, PlacemarkScope.place, "forward geocode should populate scope")
         XCTAssertEqual(placemark.country?.code, "CN", "forward geocode should populate ISO country code")
         XCTAssertEqual(placemark.country?.name, "中国", "forward geocode should populate country")

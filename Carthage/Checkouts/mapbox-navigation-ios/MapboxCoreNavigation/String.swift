@@ -2,7 +2,7 @@ import Foundation
 
 extension String {
     var ISO8601Date: Date? {
-        return DateFormatter.ISO8601.date(from: self)
+        return Date.ISO8601Formatter.date(from: self)
     }
     
     /**
@@ -55,6 +55,10 @@ extension String {
     func minimumEditDistance(to word: String) -> Int {
         let fromWordCount = count
         let toWordCount = word.count
+        
+        guard !isEmpty else { return toWordCount }
+        guard !word.isEmpty else { return fromWordCount }
+        
         var matrix = [[Int]](repeating: [Int](repeating: 0, count: toWordCount + 1), count: fromWordCount + 1)
         
         // initialize matrix
