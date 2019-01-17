@@ -249,7 +249,7 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
             guard let destination = destinationController as? RouteViewController else {
                 fatalError("Invalid destination controller: \(segue.destination)")
             }
-            // update route model object for passing to selector view
+            // update route model object for passing to route view
             // if the destination location hadn't been set yet, set it to the first geocoding result
             if (self.routeModel?.destinationLocation?.latitude == nil){
                 self.routeModel?.destinationLocation = forwardGeocodeResults?.first?.location?.coordinate
@@ -261,7 +261,6 @@ class BaseViewController: UIViewController, UITextFieldDelegate, MGLMapViewDeleg
                 destination.routeModel = self.routeModel
                 destination.userModel = self.userModel
             }
-        
         default:
             fatalError("Did not recognize identifier: \(segue.identifier ?? "")")
         }

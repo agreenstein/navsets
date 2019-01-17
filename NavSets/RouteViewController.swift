@@ -185,11 +185,11 @@ class RouteViewController: UIViewController, UITextFieldDelegate, MGLMapViewDele
         self.totalCostProgress.setProgress(currTotalFraction, animated: animated)
         // uikit updates need to happen in main thread
         DispatchQueue.main.async(){
-            self.totalOffsetHistory.text = String(format: "$%.2f", (self.userModel?.totalOffsetHistory)! / 100)
-            print ("Total offset history: " + String(format: "$%.2f", (self.userModel?.totalOffsetHistory)! / 100))
+            self.totalOffsetHistory.text = String(format: "$%.2f", Float((self.userModel?.totalOffsetHistory)!) / 100)
+            print ("Total offset history: " + String(format: "$%.2f", Float((self.userModel?.totalOffsetHistory)!) / 100))
             print ("Label: " + self.totalOffsetHistory.text!)
-            self.lastChargeInfo.text = String(format: "$%.2f", (self.userModel?.lastChargeAmount)! / 100)
-            print ("Last charge amount : " + String(format: "$%.2f", (self.userModel?.lastChargeAmount)! / 100))
+            self.lastChargeInfo.text = String(format: "$%.2f", Float((self.userModel?.lastChargeAmount)!) / 100)
+            print ("Last charge amount : " + String(format: "$%.2f", Float((self.userModel?.lastChargeAmount)!) / 100))
             print ("Label: " + self.lastChargeInfo.text!)
         }
     }
@@ -670,12 +670,12 @@ class RouteViewController: UIViewController, UITextFieldDelegate, MGLMapViewDele
             title = "Success"
             message = "Offsets purchased"
             print ("payment success")
-            print ("Current cumulative cost is : " + String(format: "$%.2f", (self.userModel?.cumulativeCost)! / 100))
+            print ("Current cumulative cost is : " + String(format: "$%.2f", Float((self.userModel?.cumulativeCost)!) / 100))
             // update the last charge and total history
             self.userModel?.totalOffsetHistory += (self.userModel?.cumulativeCost)!
             self.userModel?.lastChargeAmount = (self.userModel?.cumulativeCost)!
-            print ("Total offset history is now: " + String(format: "$%.2f", (self.userModel?.totalOffsetHistory)! / 100))
-            print ("Last charge amount is now: " + String(format: "$%.2f", (self.userModel?.lastChargeAmount)! / 100))
+            print ("Total offset history is now: " + String(format: "$%.2f", Float((self.userModel?.totalOffsetHistory)!) / 100))
+            print ("Last charge amount is now: " + String(format: "$%.2f", Float((self.userModel?.lastChargeAmount)!) / 100))
             // reset the cumulative cost, charge threshold, and previous overpaid
             self.userModel?.cumulativeCost = 0
             saveUser()

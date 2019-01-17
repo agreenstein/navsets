@@ -39,7 +39,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         var initialViewController = storyboard.instantiateViewController(withIdentifier: "BaseViewController")
         // Determine the view we should start with
         var firstLaunch = UserDefaults.standard.bool(forKey: "firstLaunch")
-        // TEMPORARILY make firstLaunch always true so can view setup walkthrough screen
+        // TEMPORARILY make firstLaunch always true so can view setup walkthrough screen without uninstalling app
 //        firstLaunch = true
         if firstLaunch  {
             print("First launch, setting UserDefault")

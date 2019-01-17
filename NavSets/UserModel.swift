@@ -105,9 +105,9 @@ class UserModel: NSObject, NSCoding{
         let carYear = aDecoder.decodeObject(forKey: PropertyKey.carYear) as? String
         let emissions = aDecoder.decodeObject(forKey: PropertyKey.CO2GramsPerMile) as? Float
         let stripeID = aDecoder.decodeObject(forKey: PropertyKey.stripeID) as? String
-        let cumulativeCost = aDecoder.decodeObject(forKey: PropertyKey.cumulativeCost) as? Int
-        let lastChargeAmount = aDecoder.decodeObject(forKey: PropertyKey.lastChargeAmount) as? Int
-        let totalOffsetHistory = aDecoder.decodeObject(forKey: PropertyKey.totalOffsetHistory) as? Int
+        let cumulativeCost = aDecoder.decodeInteger(forKey: PropertyKey.cumulativeCost)
+        let lastChargeAmount = aDecoder.decodeInteger(forKey: PropertyKey.lastChargeAmount)
+        let totalOffsetHistory = aDecoder.decodeInteger(forKey: PropertyKey.totalOffsetHistory)
         
         self.init(carMake: carMake, carModel: carModel, carYear: carYear, gramsPerMile: emissions, stripeID: stripeID, cumulativeCost: cumulativeCost, lastChargeAmount: lastChargeAmount,  totalOffsetHistory: totalOffsetHistory)
     }
